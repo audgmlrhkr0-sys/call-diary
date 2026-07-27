@@ -1,0 +1,690 @@
+/* =========================================================
+   전화기 방명록 - 유럽 귀족풍 · 모네 인상주의 색감 스타일시트
+   이미지가 없을 때는 색상/그라데이션으로 대체되며,
+   public/assets/images 안에 실제 파일을 넣으면 자동으로 반영됩니다.
+   ========================================================= */
+
+:root {
+  /* 아이보리 & 샴페인 골드 (귀족 저택의 종이/벽지 톤) */
+  --color-cream: #f8f2e7;
+  --color-parchment: #eee1c9;
+  --color-parchment-dark: #ddcca3;
+  /* 깊은 인디고 & 플럼 (밤하늘/벨벳 커튼 톤) */
+  --color-wood-dark: #1f2440;
+  --color-wood: #3b2f57;
+  --color-wood-light: #59486f;
+  /* 앤틱 골드 */
+  --color-brass: #c7a23c;
+  --color-brass-light: #ecd48f;
+  /* 잉크 (플럼 블랙) */
+  --color-ink: #2a2138;
+  --color-ink-soft: #59506b;
+  /* 버건디 (귀족 인장/와인 톤) */
+  --color-accent-red: #7d2f4d;
+  --color-accent-red-dark: #55203a;
+  --color-shadow: rgba(18, 14, 34, 0.55);
+
+  /* 모네 그림 속 색감 (수련, 인상, 해돋이) */
+  --color-monet-blue: #93b7cc;
+  --color-monet-lavender: #b9a6cf;
+  --color-monet-sage: #a2bd97;
+  --color-monet-blush: #ddb3bf;
+
+  --font-display: "Playfair Display", "Noto Serif KR", serif;
+  --font-type: "Cormorant Garamond", "Nanum Myeongjo", serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-type);
+  font-size: 1.08rem;
+  color: var(--color-ink);
+  background-color: var(--color-wood-dark);
+  background-image:
+    url("/assets/images/desk-background.jpg"),
+    radial-gradient(circle at 18% 24%, rgba(147, 183, 204, 0.5), transparent 42%),
+    radial-gradient(circle at 82% 18%, rgba(221, 179, 191, 0.45), transparent 46%),
+    radial-gradient(circle at 26% 82%, rgba(162, 189, 151, 0.4), transparent 48%),
+    radial-gradient(circle at 78% 78%, rgba(185, 166, 207, 0.5), transparent 50%),
+    linear-gradient(160deg, #2c3358 0%, #3b2f57 55%, #2a2138 100%);
+  background-size: cover, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 저녁 살롱의 은은한 비네트 + 그레인 오버레이 */
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  background: radial-gradient(ellipse at center, transparent 42%, rgba(16, 12, 28, 0.6) 100%);
+}
+
+.paper-grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 49;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: repeating-linear-gradient(
+      0deg, rgba(255, 255, 255, 0.6) 0px, transparent 1px, transparent 2px
+    ),
+    repeating-linear-gradient(
+      90deg, rgba(0, 0, 0, 0.4) 0px, transparent 1px, transparent 2px
+    );
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---------------- 상단 바 ---------------- */
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+}
+
+.brand {
+  font-family: var(--font-display);
+  color: var(--color-brass-light);
+  letter-spacing: 0.12em;
+  font-size: 1.05rem;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.ornate-btn {
+  font-family: var(--font-type);
+  background: linear-gradient(180deg, var(--color-parchment), var(--color-parchment-dark));
+  color: var(--color-ink);
+  border: 2px solid var(--color-brass);
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--color-wood-dark), 0 6px 10px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ornate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 var(--color-wood-dark), 0 10px 14px rgba(0, 0, 0, 0.45);
+}
+
+.ornate-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 0 var(--color-wood-dark), 0 4px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------------- 공통 장면(scene) ---------------- */
+.scene {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 90px 24px 40px;
+}
+
+/* ---------------- 데스크(전화기 액자) ---------------- */
+.desk {
+  position: relative;
+  width: min(560px, 92vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  background-image:
+    url("/assets/images/paper-texture.jpg"),
+    radial-gradient(circle at 12% 10%, rgba(147, 183, 204, 0.22), transparent 40%),
+    radial-gradient(circle at 90% 15%, rgba(221, 179, 191, 0.22), transparent 42%),
+    radial-gradient(circle at 85% 90%, rgba(162, 189, 151, 0.2), transparent 45%),
+    linear-gradient(160deg, var(--color-parchment) 0%, var(--color-parchment-dark) 100%);
+  background-size: cover, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  background-blend-mode: multiply, normal, normal, normal, normal;
+  border: 10px solid var(--color-wood);
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 4px var(--color-brass),
+    0 0 0 6px var(--color-wood-dark),
+    0 25px 60px var(--color-shadow);
+  padding: 44px 36px 36px;
+  text-align: center;
+}
+
+.corner {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  background-image: url("/assets/images/ornament-corner.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.85;
+}
+
+.corner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-top: 3px solid var(--color-brass);
+  border-left: 3px solid var(--color-brass);
+  border-radius: 4px 0 0 0;
+}
+
+.corner-tl { top: 8px; left: 8px; }
+.corner-tr { top: 8px; right: 8px; transform: scaleX(-1); }
+.corner-bl { bottom: 8px; left: 8px; transform: scaleY(-1); }
+.corner-br { bottom: 8px; right: 8px; transform: scale(-1, -1); }
+
+/* ---------------- 전화기 일러스트 ---------------- */
+.phone-wrap {
+  position: relative;
+  width: 240px;
+  height: 190px;
+  margin: 0 auto 22px;
+}
+
+.phone-cord {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  width: 70px;
+  height: 40px;
+  transform: translateX(-50%);
+  border: 5px solid var(--color-wood-dark);
+  border-top: none;
+  border-radius: 0 0 50px 50px;
+  opacity: 0.7;
+}
+
+.phone-body {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 130px;
+  border-radius: 45% 45% 20px 20px / 65% 65% 20px 20px;
+  background-image:
+    url("/assets/images/phone-body.png"),
+    linear-gradient(160deg, #4b3a63 0%, #201a33 75%);
+  background-size: cover, cover;
+  background-position: center;
+  border: 3px solid var(--color-brass);
+  box-shadow: inset 0 6px 14px rgba(0, 0, 0, 0.5), 0 14px 24px rgba(0, 0, 0, 0.45);
+}
+
+.phone-dial {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fbf3dd, var(--color-parchment-dark) 70%);
+  box-shadow: inset 0 0 0 6px var(--color-brass), 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.phone-dial .dial-hole {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4a3d63, var(--color-ink) 75%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--color-brass-light);
+  transform: rotate(var(--angle)) translate(38px) rotate(calc(-1 * var(--angle)));
+}
+
+.phone-dial::after {
+  content: "";
+  position: absolute;
+  inset: 30%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #3d3159, var(--color-wood-dark));
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+
+.handset {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 210px;
+  height: 60px;
+  transform: translateX(-50%) rotate(-3deg);
+  transform-origin: center;
+}
+
+.handset-bar {
+  position: absolute;
+  left: 30px;
+  right: 30px;
+  top: 22px;
+  height: 16px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #3d3159, #1a1530);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.handset-bulb {
+  position: absolute;
+  top: 0;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4b3a63, #1a1530 75%);
+  border: 2px solid var(--color-brass);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+}
+
+.handset-bulb-left { left: 0; }
+.handset-bulb-right { right: 0; }
+
+@keyframes handset-shake {
+  0%, 100% { transform: translateX(-50%) rotate(-3deg) translate(0, 0); }
+  10% { transform: translateX(-50%) rotate(-9deg) translate(-4px, -3px); }
+  20% { transform: translateX(-50%) rotate(4deg) translate(4px, 0); }
+  30% { transform: translateX(-50%) rotate(-6deg) translate(-3px, 2px); }
+  40% { transform: translateX(-50%) rotate(7deg) translate(3px, -2px); }
+  50% { transform: translateX(-50%) rotate(-8deg) translate(-4px, 1px); }
+  60% { transform: translateX(-50%) rotate(5deg) translate(4px, 2px); }
+  70% { transform: translateX(-50%) rotate(-5deg) translate(-2px, -2px); }
+  80% { transform: translateX(-50%) rotate(6deg) translate(3px, 1px); }
+  90% { transform: translateX(-50%) rotate(-4deg) translate(-2px, 0); }
+}
+
+.handset.ringing {
+  animation: handset-shake 0.22s infinite;
+}
+
+/* ---------------- 상태 문구 ---------------- */
+.status-text {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--color-ink-soft);
+  margin: 0 0 26px;
+  min-height: 1.4em;
+}
+
+/* ---------------- 버튼 공통 ---------------- */
+.btn {
+  font-family: var(--font-type);
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 26px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.btn-icon {
+  margin-right: 6px;
+}
+
+.call-btn {
+  background: linear-gradient(180deg, var(--color-accent-red), var(--color-accent-red-dark));
+  color: var(--color-cream);
+  box-shadow: 0 4px 0 #3a1729, 0 10px 20px rgba(0, 0, 0, 0.4);
+  font-size: 1.1rem;
+  padding: 16px 34px;
+}
+
+.call-btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+.call-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #3a1729; }
+
+.answer-btn {
+  background: linear-gradient(180deg, var(--color-brass-light), var(--color-brass));
+  color: var(--color-ink);
+  box-shadow: 0 4px 0 #8c6f28, 0 10px 20px rgba(0, 0, 0, 0.35);
+  animation: pulse-btn 1s ease-in-out infinite;
+}
+
+@keyframes pulse-btn {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
+
+.primary-btn {
+  background: linear-gradient(180deg, var(--color-brass-light), var(--color-brass));
+  color: var(--color-ink);
+  box-shadow: 0 3px 0 #8c6f28, 0 8px 14px rgba(0, 0, 0, 0.3);
+}
+
+.primary-btn:hover { transform: translateY(-2px); }
+.primary-btn:active { transform: translateY(1px); box-shadow: 0 1px 0 #8c6f28; }
+
+.ghost-btn {
+  background: transparent;
+  color: var(--color-ink-soft);
+  border: 2px solid var(--color-ink-soft);
+  box-shadow: none;
+}
+
+.ghost-btn:hover { background: rgba(43, 33, 56, 0.08); }
+
+.btn.small {
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  margin-top: 6px;
+}
+
+/* ---------------- 패널 공통 ---------------- */
+.panel {
+  animation: fade-in-up 0.35s ease both;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.panel-label {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--color-brass);
+  margin: 0 0 8px;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+/* ---------------- 듣는 중 패널 ---------------- */
+.progress-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 6px;
+  background: rgba(43, 33, 56, 0.15);
+  overflow: hidden;
+  margin-bottom: 14px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.progress-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--color-accent-red), var(--color-brass));
+  transition: width 10s linear;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--color-ink-soft);
+  margin: 0 0 14px;
+}
+
+.live-transcript {
+  min-height: 3.2em;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--color-ink);
+  background: rgba(238, 231, 248, 0.4);
+  border: 1px dashed var(--color-brass);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 0 0 4px;
+}
+
+/* ---------------- 리뷰 패널 ---------------- */
+.review-text {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-style: italic;
+  color: var(--color-ink);
+  padding: 16px 18px;
+  border-top: 1px solid var(--color-brass);
+  border-bottom: 1px solid var(--color-brass);
+  margin: 0;
+}
+
+/* ---------------- 이름 입력 패널 ---------------- */
+.naming-quote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--color-ink-soft);
+  padding: 0 8px 16px;
+  border-bottom: 1px solid rgba(43, 33, 56, 0.25);
+  margin: 0 0 18px;
+}
+
+.naming-label {
+  display: block;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-soft);
+  margin-bottom: 8px;
+}
+
+.name-input {
+  width: 100%;
+  max-width: 320px;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  text-align: center;
+  padding: 10px 14px;
+  border: none;
+  border-bottom: 2px solid var(--color-brass);
+  background: transparent;
+  color: var(--color-ink);
+  outline: none;
+}
+
+.name-input:focus {
+  border-bottom-color: var(--color-accent-red);
+}
+
+.date-stamp {
+  margin-top: 14px;
+  display: inline-block;
+  font-family: var(--font-type);
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  color: var(--color-accent-red-dark);
+  border: 2px solid var(--color-accent-red-dark);
+  border-radius: 4px;
+  padding: 4px 12px;
+  transform: rotate(-3deg);
+  opacity: 0.85;
+}
+
+/* ---------------- 저장 완료 패널 ---------------- */
+.saved-panel {
+  padding: 12px 0 4px;
+}
+
+.stamp-mark {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.4rem;
+  letter-spacing: 0.1em;
+  color: var(--color-accent-red-dark);
+  border: 4px double var(--color-accent-red-dark);
+  border-radius: 50%;
+  padding: 18px 14px;
+  transform: rotate(-8deg) scale(1);
+  animation: stamp-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  margin-bottom: 14px;
+}
+
+@keyframes stamp-in {
+  0% { transform: rotate(-8deg) scale(2.4); opacity: 0; }
+  70% { opacity: 1; }
+  100% { transform: rotate(-8deg) scale(1); opacity: 1; }
+}
+
+.saved-panel p {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--color-ink-soft);
+}
+
+/* ---------------- 에러 문구 ---------------- */
+.error-text {
+  margin-top: 16px;
+  color: var(--color-accent-red-dark);
+  font-size: 0.85rem;
+}
+
+/* ================= 갤러리 화면 ================= */
+.gallery-frame {
+  width: min(920px, 94vw);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  background-image:
+    url("/assets/images/paper-texture.jpg"),
+    radial-gradient(circle at 15% 15%, rgba(185, 166, 207, 0.22), transparent 42%),
+    radial-gradient(circle at 88% 85%, rgba(147, 183, 204, 0.2), transparent 45%),
+    linear-gradient(160deg, var(--color-parchment) 0%, var(--color-parchment-dark) 100%);
+  background-size: cover, 100% 100%, 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  background-blend-mode: multiply, normal, normal, normal;
+  border: 10px solid var(--color-wood);
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 4px var(--color-brass),
+    0 0 0 6px var(--color-wood-dark),
+    0 25px 60px var(--color-shadow);
+  padding: 30px 32px;
+  overflow: hidden;
+}
+
+.gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--color-brass);
+  padding-bottom: 14px;
+}
+
+.gallery-header h1 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  letter-spacing: 0.3em;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.gallery-list {
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 20px;
+  padding: 4px 4px 12px;
+}
+
+.gallery-card {
+  position: relative;
+  background-image: url("/assets/images/paper-texture.jpg");
+  background-size: cover;
+  background-color: var(--color-cream);
+  background-blend-mode: multiply;
+  border: 1px solid var(--color-brass);
+  border-radius: 6px;
+  padding: 18px 16px 16px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+  transform: rotate(var(--tilt, 0deg));
+}
+
+.gallery-card::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 14px;
+  background: rgba(199, 162, 60, 0.65);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.gallery-card-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-ink);
+  margin: 0 0 6px;
+}
+
+.gallery-card-message {
+  font-size: 0.95rem;
+  color: var(--color-ink-soft);
+  line-height: 1.5;
+  margin: 0 0 12px;
+  word-break: keep-all;
+}
+
+.gallery-card-date {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--color-accent-red-dark);
+  text-align: right;
+  margin: 0;
+}
+
+.gallery-empty {
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--color-ink-soft);
+  padding: 40px 0;
+}
+
+/* ---------------- 스크롤바 (레트로 톤) ---------------- */
+.desk::-webkit-scrollbar,
+.gallery-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.desk::-webkit-scrollbar-thumb,
+.gallery-list::-webkit-scrollbar-thumb {
+  background: var(--color-brass);
+  border-radius: 4px;
+}
+
+/* ---------------- 반응형 ---------------- */
+@media (max-width: 480px) {
+  .desk { padding: 34px 20px 26px; }
+  .phone-wrap { width: 200px; height: 160px; }
+  .phone-dial { width: 90px; height: 90px; }
+  .gallery-frame { padding: 20px 16px; }
+}

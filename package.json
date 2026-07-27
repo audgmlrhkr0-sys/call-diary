@@ -1,0 +1,13 @@
+{
+  "name": "phone-guestbook",
+  "version": "1.0.0",
+  "description": "레트로 유럽풍 전화기 방명록 (Phone Guestbook) 웹앱",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
