@@ -32,6 +32,7 @@
   const backBtn = document.getElementById('back-btn');
   const galleryList = document.getElementById('gallery-list');
   const galleryEmpty = document.getElementById('gallery-empty');
+  const storageNotice = document.getElementById('storage-notice');
 
   const handsetEl = document.getElementById('handset');
   const statusText = document.getElementById('status-text');
@@ -345,6 +346,7 @@
     try {
       const entries = await GuestbookAPI.fetchEntries();
       renderGalleryCards(entries);
+      storageNotice.classList.toggle('hidden', !GuestbookAPI.isUsingLocalStorage);
     } catch (err) {
       galleryList.innerHTML = '';
       galleryEmpty.textContent = '방명록을 불러오지 못했습니다.';

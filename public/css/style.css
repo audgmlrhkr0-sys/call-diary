@@ -50,7 +50,7 @@ body {
   color: var(--color-ink);
   background-color: var(--color-wood-dark);
   background-image:
-    url("/assets/images/desk-background.jpg"),
+    url("../assets/images/desk-background.jpg"),
     radial-gradient(circle at 18% 24%, rgba(147, 183, 204, 0.5), transparent 42%),
     radial-gradient(circle at 82% 18%, rgba(221, 179, 191, 0.45), transparent 46%),
     radial-gradient(circle at 26% 82%, rgba(162, 189, 151, 0.4), transparent 48%),
@@ -154,7 +154,7 @@ body {
   max-height: 88vh;
   overflow-y: auto;
   background-image:
-    url("/assets/images/paper-texture.jpg"),
+    url("../assets/images/paper-texture.jpg"),
     radial-gradient(circle at 12% 10%, rgba(147, 183, 204, 0.22), transparent 40%),
     radial-gradient(circle at 90% 15%, rgba(221, 179, 191, 0.22), transparent 42%),
     radial-gradient(circle at 85% 90%, rgba(162, 189, 151, 0.2), transparent 45%),
@@ -176,7 +176,7 @@ body {
   position: absolute;
   width: 46px;
   height: 46px;
-  background-image: url("/assets/images/ornament-corner.png");
+  background-image: url("../assets/images/ornament-corner.png");
   background-size: contain;
   background-repeat: no-repeat;
   opacity: 0.85;
@@ -226,7 +226,7 @@ body {
   height: 130px;
   border-radius: 45% 45% 20px 20px / 65% 65% 20px 20px;
   background-image:
-    url("/assets/images/phone-body.png"),
+    url("../assets/images/phone-body.png"),
     linear-gradient(160deg, #4b3a63 0%, #201a33 75%);
   background-size: cover, cover;
   background-position: center;
@@ -570,7 +570,7 @@ body {
   display: flex;
   flex-direction: column;
   background-image:
-    url("/assets/images/paper-texture.jpg"),
+    url("../assets/images/paper-texture.jpg"),
     radial-gradient(circle at 15% 15%, rgba(185, 166, 207, 0.22), transparent 42%),
     radial-gradient(circle at 88% 85%, rgba(147, 183, 204, 0.2), transparent 45%),
     linear-gradient(160deg, var(--color-parchment) 0%, var(--color-parchment-dark) 100%);
@@ -614,7 +614,7 @@ body {
 
 .gallery-card {
   position: relative;
-  background-image: url("/assets/images/paper-texture.jpg");
+  background-image: url("../assets/images/paper-texture.jpg");
   background-size: cover;
   background-color: var(--color-cream);
   background-blend-mode: multiply;
@@ -659,6 +659,18 @@ body {
   color: var(--color-accent-red-dark);
   text-align: right;
   margin: 0;
+}
+
+.storage-notice {
+  text-align: center;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  color: var(--color-accent-red-dark);
+  background: rgba(199, 162, 60, 0.15);
+  border: 1px dashed var(--color-brass);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 0 0 16px;
 }
 
 .gallery-empty {

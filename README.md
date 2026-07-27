@@ -46,6 +46,32 @@ http://localhost:4173
   추가 작업이 필요합니다 (현재 버전은 포함되어 있지 않습니다).
 - 방명록 데이터는 `data/entries.json` 파일에 저장됩니다. 백업하려면 이 파일만 복사하면 됩니다.
 
+## 저장 방식: 서버 모드 vs 브라우저 저장 모드
+
+이 앱은 실행 환경을 자동으로 감지해서 두 가지 방식으로 동작합니다.
+
+- **서버 모드** (`npm start` 로 실행했을 때): `server.js`가 켜져 있으면 방명록이
+  `data/entries.json` 파일에 저장됩니다. 같은 기기(키오스크 PC)에서 여러 번 방문해도
+  모두 하나의 방명록에 누적됩니다. **실제 전화기 설치물 용도로는 이 방식을 사용하세요.**
+- **브라우저 저장 모드** (GitHub Pages 등 정적 호스팅): 서버가 없으면 자동으로
+  브라우저의 `localStorage`에 저장하도록 전환됩니다. 이 경우 방명록은 **그 브라우저/기기에만**
+  남고, 다른 사람이 접속해도 서로의 글이 보이지 않습니다 (데모/체험용).
+
+## GitHub Pages로 배포하기
+
+이 저장소를 그대로 GitHub Pages에 올리면 됩니다.
+
+1. GitHub 저장소 → **Settings → Pages**
+2. **Source**: `Deploy from a branch`
+3. **Branch**: `main`, 폴더는 `/ (root)` 선택 후 저장
+
+저장소 루트의 [index.html](index.html)이 `public/index.html`로 자동 연결해주기 때문에
+루트를 그대로 배포해도 전화기 화면이 정상적으로 뜹니다. (루트에 `index.html`이 없으면
+GitHub가 `README.md`를 대신 보여주는데, 이 파일이 그 문제를 막아줍니다.)
+
+GitHub Pages는 정적 파일만 제공하고 `server.js`를 실행해주지 않으므로, 배포된 사이트에서는
+자동으로 위의 **브라우저 저장 모드**로 동작합니다 (방명록 화면 상단에 안내 문구가 표시됩니다).
+
 ## 나중에 이미지/사운드 넣는 방법 (중요)
 
 이미지가 없어도 앱은 색상/그라데이션으로 예쁘게 동작하도록 만들어 두었습니다.
@@ -72,20 +98,22 @@ http://localhost:4173
 ## 프로젝트 구조
 
 ```
-├── server.js                 # Express 서버 (정적 파일 + REST API)
+├── index.html                 # GitHub Pages용 리다이렉트 (public/index.html로 이동)
+├── .nojekyll                  # GitHub Pages가 Jekyll 처리를 하지 않도록 하는 빈 파일
+├── server.js                  # Express 서버 (정적 파일 + REST API)
 ├── package.json
 ├── data/
-│   └── entries.json           # 방명록 데이터 저장 파일
+│   └── entries.json           # 방명록 데이터 저장 파일 (서버 모드)
 └── public/
-    ├── index.html
-    ├── css/style.css          # 레트로 유럽풍 스타일
+    ├── index.html              # 실제 앱 화면
+    ├── css/style.css           # 레트로 유럽풍 스타일
     ├── js/
-    │   ├── app.js              # 상태 흐름(idle→ringing→listening→...) 및 UI 로직
-    │   ├── speech.js            # Web Speech API 래퍼 (10초 인식)
-    │   └── api.js               # 서버 API 호출 헬퍼
+    │   ├── app.js               # 상태 흐름(idle→ringing→listening→...) 및 UI 로직
+    │   ├── speech.js             # Web Speech API 래퍼 (10초 인식)
+    │   └── api.js                # API 호출 헬퍼 (서버 모드 / localStorage 모드 자동 전환)
     └── assets/
-        ├── images/             # 나중에 사진을 넣을 자리 (README.txt 참고)
-        └── sounds/             # 벨소리 파일을 넣을 자리 (선택)
+        ├── images/              # 나중에 사진을 넣을 자리 (README.txt 참고)
+        └── sounds/              # 벨소리 파일을 넣을 자리 (선택)
 ```
 
 ## API
