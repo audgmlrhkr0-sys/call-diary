@@ -31,8 +31,6 @@
   const galleryToggleBtn = document.getElementById('gallery-toggle-btn');
   const backBtn = document.getElementById('back-btn');
   const galleryList = document.getElementById('gallery-list');
-  const galleryEmpty = document.getElementById('gallery-empty');
-  const storageNotice = document.getElementById('storage-notice');
 
   const handsetEl = document.getElementById('handset');
   const statusText = document.getElementById('status-text');
@@ -301,7 +299,7 @@
 
     try {
       await GuestbookAPI.createEntry(nameInput.value, confirmedMessage);
-      statusText.textContent = '감사합니다';
+      statusText.textContent = '';
       showOnly(savedPanel);
       savedResetTimerId = setTimeout(goIdle, 3200);
     } catch (err) {
@@ -331,7 +329,6 @@
    * ---------------------------------------------------------- */
   function renderGalleryCards(entries) {
     galleryList.innerHTML = '';
-    galleryEmpty.classList.add('hidden');
     if (!entries.length) {
       return;
     }
@@ -339,7 +336,7 @@
     entries.forEach((entry, index) => {
       const card = document.createElement('article');
       card.className = 'gallery-card';
-      const tilt = (index % 2 === 0 ? -1 : 1) * (1 + (index % 3));
+      const tilt = (index % 2 === 0 ? -1 : 1) * (0.6 + (index % 3) * 0.4);
       card.style.setProperty('--tilt', `${tilt}deg`);
       card.innerHTML = `
         <p class="gallery-card-name">${escapeHtml(entry.name || '이름 없음')}</p>
@@ -355,14 +352,11 @@
     galleryScene.classList.remove('hidden');
     galleryToggleBtn.classList.add('hidden');
     galleryList.innerHTML = '';
-    galleryEmpty.classList.add('hidden');
-    storageNotice.classList.add('hidden');
     try {
       const entries = await GuestbookAPI.fetchEntries();
       renderGalleryCards(entries);
     } catch (err) {
       galleryList.innerHTML = '';
-      galleryEmpty.classList.add('hidden');
     }
   }
 

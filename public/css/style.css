@@ -516,19 +516,13 @@ body {
   padding: 20px 12px;
   transform: rotate(-8deg) scale(1);
   animation: stamp-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  margin-bottom: 14px;
+  margin-bottom: 0;
 }
 
 @keyframes stamp-in {
   0% { transform: rotate(-8deg) scale(2.4); opacity: 0; }
   70% { opacity: 1; }
   100% { transform: rotate(-8deg) scale(1); opacity: 1; }
-}
-
-.saved-panel p {
-  font-family: var(--font-display);
-  font-style: italic;
-  color: var(--color-ink-soft);
 }
 
 /* ---------------- 에러 문구 ---------------- */
@@ -540,15 +534,15 @@ body {
 
 /* ================= 갤러리 화면 ================= */
 .gallery-frame {
-  width: min(1240px, 96vw);
-  max-height: 92vh;
+  width: min(1100px, 94vw);
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
-  border: 1px solid #ececec;
+  background: #fffdf5;
+  border: 1px solid #ece6d4;
   border-radius: 24px;
-  box-shadow: 0 30px 70px rgba(20, 16, 30, 0.14);
-  padding: 40px 48px;
+  box-shadow: 0 24px 50px rgba(20, 16, 30, 0.12);
+  padding: 28px 36px 36px;
   overflow: hidden;
 }
 
@@ -556,34 +550,28 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  margin-bottom: 20px;
-  border-bottom: 2px solid var(--color-brass);
-  padding-bottom: 14px;
-}
-
-.gallery-header h1 {
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  letter-spacing: 0.3em;
-  color: var(--color-ink);
-  margin: 0;
+  margin-bottom: 24px;
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .gallery-list {
   overflow-y: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 20px;
-  padding: 4px 4px 12px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 28px 22px;
+  padding: 12px 8px 20px;
+  flex: 1;
+  min-height: 0;
 }
 
 .gallery-card {
   position: relative;
   background: #fffff0;
   border: 2px solid #111111;
-  border-radius: 6px;
-  padding: 18px 16px 16px;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+  border-radius: 4px;
+  padding: 22px 18px 16px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
   transform: rotate(var(--tilt, 0deg));
   font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
 }
@@ -591,13 +579,13 @@ body {
 .gallery-card::before {
   content: "";
   position: absolute;
-  top: -8px;
+  top: -9px;
   left: 50%;
   transform: translateX(-50%);
-  width: 28px;
-  height: 14px;
+  width: 32px;
+  height: 16px;
   background: #39ff14;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
 }
 
 .gallery-card-name {
@@ -605,67 +593,42 @@ body {
   font-weight: 700;
   font-size: 1.05rem;
   color: #111111;
-  margin: 0 0 6px;
+  margin: 0 0 10px;
 }
 
 .gallery-card-message {
   font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   font-size: 0.95rem;
   color: #222222;
-  line-height: 1.5;
-  margin: 0 0 12px;
+  line-height: 1.55;
+  margin: 0 0 14px;
   word-break: keep-all;
+  min-height: 3em;
 }
 
 .gallery-card-date {
   font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  color: #333333;
+  letter-spacing: 0.08em;
+  color: #555555;
   text-align: right;
   margin: 0;
 }
 
-.storage-notice {
-  text-align: center;
-  font-size: 0.78rem;
-  letter-spacing: 0.03em;
-  color: var(--color-accent-red-dark);
-  background: rgba(199, 162, 60, 0.15);
-  border: 1px dashed var(--color-brass);
-  border-radius: 6px;
-  padding: 8px 12px;
-  margin: 0 0 16px;
-}
-
-.gallery-empty {
-  text-align: center;
-  font-family: var(--font-display);
-  font-style: italic;
-  color: var(--color-ink-soft);
-  padding: 40px 0;
-}
-
-/* ---------------- 스크롤바 (레트로 톤) ---------------- */
+/* ---------------- 스크롤바 ---------------- */
 .gallery-list::-webkit-scrollbar {
   width: 8px;
 }
 
 .gallery-list::-webkit-scrollbar-thumb {
-  background: var(--color-brass);
+  background: #c9a000;
   border-radius: 4px;
 }
 
 /* ---------------- 반응형 ---------------- */
 @media (max-width: 640px) {
   .gallery-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  .gallery-header h1 {
-    font-size: 1.3rem;
-    letter-spacing: 0.15em;
+    justify-content: flex-end;
   }
   .ornate-btn {
     white-space: nowrap;
