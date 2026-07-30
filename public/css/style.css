@@ -155,29 +155,34 @@ body {
   padding: 8px;
   flex: 0 1 auto;
   min-height: 0;
+  overflow: hidden;
 }
 
 .desk-footer {
   text-align: center;
   padding-top: 18px;
   flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* ---------------- 전화기 사진 ---------------- */
 .phone-wrap {
   position: relative;
   width: 100%;
-  max-height: calc(100vh - 280px);
+  max-height: calc(100vh - 320px);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  border-radius: 12px;
 }
 
 .phone-image {
   display: block;
   width: 100%;
   height: auto;
-  max-height: calc(100vh - 280px);
+  max-height: calc(100vh - 320px);
   object-fit: contain;
   border-radius: 12px;
 }
@@ -285,6 +290,51 @@ body {
 .primary-btn:hover { transform: translateY(-2px); }
 .primary-btn:active { transform: translateY(1px); box-shadow: 0 1px 0 #8c6f28; }
 
+.retry-btn {
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #000000;
+  color: #ffe14a;
+  box-shadow: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  padding: 0;
+  border-radius: 12px;
+}
+
+.retry-btn:hover {
+  transform: translateY(-2px);
+  background: #1a1a1a;
+}
+
+.retry-btn:active {
+  transform: translateY(1px);
+}
+
+.confirm-btn {
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  font-weight: 700;
+  background: #ffe14a;
+  color: #111111;
+  box-shadow: none;
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+  padding: 14px 26px;
+  border-radius: 12px;
+}
+
+.confirm-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+}
+
+.confirm-btn:active {
+  transform: translateY(1px);
+}
+
 .ghost-btn {
   background: transparent;
   color: var(--color-ink-soft);
@@ -341,7 +391,7 @@ body {
 .progress-fill {
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, var(--color-accent-red), var(--color-brass));
+  background: linear-gradient(90deg, #ffe14a, #ffb800);
   transition: width 10s linear;
 }
 
@@ -370,13 +420,17 @@ body {
 }
 
 /* ---------------- 이름 입력 패널 ---------------- */
+.naming-panel .panel-label {
+  color: #c9a000;
+}
+
 .naming-quote {
   font-family: var(--font-display);
   font-style: italic;
   font-size: 1.05rem;
   color: var(--color-ink-soft);
   padding: 0 8px 16px;
-  border-bottom: 1px solid rgba(43, 33, 56, 0.25);
+  border-bottom: 1px solid #ffe14a;
   margin: 0 0 18px;
 }
 
@@ -396,14 +450,14 @@ body {
   text-align: center;
   padding: 10px 14px;
   border: none;
-  border-bottom: 2px solid var(--color-brass);
+  border-bottom: 2px solid #ffe14a;
   background: transparent;
   color: var(--color-ink);
   outline: none;
 }
 
 .name-input:focus {
-  border-bottom-color: var(--color-accent-red);
+  border-bottom-color: #ffb800;
 }
 
 .date-stamp {
@@ -412,12 +466,12 @@ body {
   font-family: var(--font-type);
   font-size: 0.85rem;
   letter-spacing: 0.12em;
-  color: var(--color-accent-red-dark);
-  border: 2px solid var(--color-accent-red-dark);
+  color: #c9a000;
+  border: 2px solid #ffe14a;
   border-radius: 4px;
   padding: 4px 12px;
   transform: rotate(-3deg);
-  opacity: 0.85;
+  opacity: 0.95;
 }
 
 /* ---------------- 저장 완료 패널 ---------------- */
@@ -427,14 +481,14 @@ body {
 
 .stamp-mark {
   display: inline-block;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.4rem;
-  letter-spacing: 0.1em;
-  color: var(--color-accent-red-dark);
-  border: 4px double var(--color-accent-red-dark);
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  font-weight: 900;
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+  color: #111111;
+  border: 4px double #111111;
   border-radius: 50%;
-  padding: 18px 14px;
+  padding: 20px 12px;
   transform: rotate(-8deg) scale(1);
   animation: stamp-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   margin-bottom: 14px;
@@ -500,15 +554,13 @@ body {
 
 .gallery-card {
   position: relative;
-  background-image: url("../assets/images/paper-texture.jpg");
-  background-size: cover;
-  background-color: var(--color-cream);
-  background-blend-mode: multiply;
-  border: 1px solid var(--color-brass);
+  background: #fffff0;
+  border: 2px solid #111111;
   border-radius: 6px;
   padding: 18px 16px 16px;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
   transform: rotate(var(--tilt, 0deg));
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
 }
 
 .gallery-card::before {
@@ -517,32 +569,34 @@ body {
   top: -8px;
   left: 50%;
   transform: translateX(-50%);
-  width: 26px;
+  width: 28px;
   height: 14px;
-  background: rgba(199, 162, 60, 0.65);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  background: #39ff14;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .gallery-card-name {
-  font-family: var(--font-display);
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   font-weight: 700;
   font-size: 1.05rem;
-  color: var(--color-ink);
+  color: #111111;
   margin: 0 0 6px;
 }
 
 .gallery-card-message {
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   font-size: 0.95rem;
-  color: var(--color-ink-soft);
+  color: #222222;
   line-height: 1.5;
   margin: 0 0 12px;
   word-break: keep-all;
 }
 
 .gallery-card-date {
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   font-size: 0.72rem;
   letter-spacing: 0.1em;
-  color: var(--color-accent-red-dark);
+  color: #333333;
   text-align: right;
   margin: 0;
 }

@@ -44,7 +44,6 @@
   const listeningPanel = document.getElementById('listening-panel');
   const progressFill = document.getElementById('progress-fill');
   const liveTranscript = document.getElementById('live-transcript');
-  const cancelListenBtn = document.getElementById('cancel-listen-btn');
 
   const reviewPanel = document.getElementById('review-panel');
   const reviewText = document.getElementById('review-text');
@@ -226,7 +225,7 @@
     clearError();
     handsetEl.classList.remove('ringing');
     stopRing();
-    statusText.textContent = '이야기를 들려주세요';
+    statusText.textContent = '';
     setAudioSessionType('play-and-record'); // 음성 인식은 마이크로만 캡처되도록
     showOnly(listeningPanel);
 
@@ -275,7 +274,7 @@
     setAudioSessionType('playback');
     confirmedMessage = text;
     reviewText.textContent = `“${text}”`;
-    statusText.textContent = '제대로 들렸는지 확인해주세요';
+    statusText.textContent = '';
     showOnly(reviewPanel);
   }
 
@@ -314,10 +313,6 @@
    * ---------------------------------------------------------- */
   callBtn.addEventListener('click', goRinging);
   answerBtn.addEventListener('click', goListening);
-  cancelListenBtn.addEventListener('click', () => {
-    SpeechController.stop();
-    goIdle();
-  });
   retryBtn.addEventListener('click', goListening);
   confirmBtn.addEventListener('click', goNaming);
   cancelNameBtn.addEventListener('click', goIdle);
@@ -353,6 +348,7 @@
   async function openGallery() {
     deskScene.classList.add('hidden');
     galleryScene.classList.remove('hidden');
+    galleryToggleBtn.classList.add('hidden');
     galleryList.innerHTML = '';
     galleryEmpty.classList.add('hidden');
     storageNotice.classList.add('hidden');
@@ -368,6 +364,7 @@
   function closeGallery() {
     galleryScene.classList.add('hidden');
     deskScene.classList.remove('hidden');
+    galleryToggleBtn.classList.remove('hidden');
   }
 
   galleryToggleBtn.addEventListener('click', openGallery);

@@ -46,7 +46,6 @@
             <div id="progress-fill" class="progress-fill"></div>
           </div>
           <p id="live-transcript" class="live-transcript">&hellip; 듣고 있어요 &hellip;</p>
-          <button id="cancel-listen-btn" class="btn ghost-btn small" type="button">그만하기</button>
         </div>
 
         <!-- reviewing -->
@@ -54,8 +53,8 @@
           <p class="panel-label">이렇게 들었어요</p>
           <p id="review-text" class="review-text"></p>
           <div class="panel-actions">
-            <button id="retry-btn" class="btn ghost-btn" type="button">↺ 다시 말하기</button>
-            <button id="confirm-btn" class="btn primary-btn" type="button">이 문장으로 등록 ✓</button>
+            <button id="retry-btn" class="btn retry-btn" type="button" aria-label="다시 말하기">↺</button>
+            <button id="confirm-btn" class="btn confirm-btn" type="button">등록하기</button>
           </div>
         </div>
 
@@ -77,13 +76,13 @@
 
           <div class="panel-actions">
             <button id="cancel-name-btn" class="btn ghost-btn" type="button">취소</button>
-            <button id="save-btn" class="btn primary-btn" type="button">방명록에 새기기 ✒</button>
+            <button id="save-btn" class="btn confirm-btn" type="button">방명록 남기기</button>
           </div>
         </div>
 
         <!-- saved -->
         <div id="saved-panel" class="panel saved-panel hidden">
-          <div class="stamp-mark">전달됨</div>
+          <div class="stamp-mark">SUCCESS</div>
           <p>방명록에 새겨졌습니다</p>
         </div>
 
