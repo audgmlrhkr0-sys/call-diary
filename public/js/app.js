@@ -65,23 +65,25 @@
   let savedResetTimerId = null;
 
   /* ------------------------------------------------------------
-   * 다이얼 구멍 생성 (1~9, 0 순서로 시계방향 배치)
+   * iOS/iPadOS 오디오 세션 제어 (Safari 17+ AudioSession API)
+   * 아이패드는 마이크가 켜지면(음성 인식 중) 오디오 출력 경로가 제멋대로
+   * 바뀌는 경우가 있어, 상황에 맞게 세션 종류를 명시적으로 지정합니다.
+   * - 'playback'      : 벨소리 등 재생 전용 → 스피커로 재생
+   * - 'play-and-record': 음성 인식(마이크 캡처) 중 → 마이크가 확실히 사용되도록
+   * 이 API를 지원하지 않는 브라우저(Chrome/Edge 등)에서는 조용히 무시됩니다.
    * ---------------------------------------------------------- */
-  function buildDial() {
-    const dial = document.getElementById('phone-dial');
-    if (!dial) return;
-    const labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
-    labels.forEach((label, i) => {
-      const hole = document.createElement('span');
-      hole.className = 'dial-hole';
-      hole.style.setProperty('--angle', `${i * 36}deg`);
-      hole.textContent = label;
-      dial.appendChild(hole);
-    });
+  function setAudioSessionType(type) {
+    try {
+      if (navigator.audioSession) {
+        navigator.audioSession.type = type;
+      }
+    } catch (err) {
+      // AudioSession API 미지원 환경은 무시하고 기본 동작을 따릅니다.
+    }
   }
 
   /* ------------------------------------------------------------
-   * 합성 벨소리 (Web Audio API) - ring.mp3 파일이 없을 때 대체 사용
+   * 합성 벨소리 (Web Audio API) - call.mp3 파일이 없을 때 대체 사용
    * ---------------------------------------------------------- */
   let audioCtx = null;
   let ringIntervalId = null;
@@ -144,6 +146,7 @@
 
   function startRing() {
     usingAudioFile = false;
+    setAudioSessionType('playback'); // 벨소리는 항상 스피커로 재생되도록
     if (ringAudio) {
       ringAudio.currentTime = 0;
       ringAudio.loop = true;
@@ -187,6 +190,11 @@
   }
 
   function showError(message) {
+    if (!message) {
+      errorText.classList.add('hidden');
+      errorText.textContent = '';
+      return;
+    }
     errorText.textContent = message;
     errorText.classList.remove('hidden');
   }
@@ -194,13 +202,14 @@
   function goIdle() {
     clearTimeout(savedResetTimerId);
     deskScene.dataset.state = 'idle';
+    setAudioSessionType('playback');
     stopRing();
     SpeechController.stop();
     handsetEl.classList.remove('ringing');
     clearError();
     showOnly(null);
     callBtn.classList.remove('hidden');
-    statusText.textContent = '수화기 옆, 벨을 울려 오래된 이야기를 남겨보세요';
+    statusText.textContent = '';
   }
 
   function goRinging() {
@@ -218,6 +227,7 @@
     handsetEl.classList.remove('ringing');
     stopRing();
     statusText.textContent = '이야기를 들려주세요';
+    setAudioSessionType('play-and-record'); // 음성 인식은 마이크로만 캡처되도록
     showOnly(listeningPanel);
 
     liveTranscript.textContent = '… 듣고 있어요 …';
@@ -254,13 +264,15 @@
   // 인식 실패 시, 전화는 끊지 않고 바로 다시 "통화 시작"을 누를 수 있는 상태로
   function goRingingReadyForRetry() {
     deskScene.dataset.state = 'ringing';
-    statusText.textContent = '다시 수화기를 들고 통화를 시작해주세요';
+    setAudioSessionType('playback');
+    statusText.textContent = '';
     showOnly(answerBtn);
   }
 
   function goReviewing(text) {
     deskScene.dataset.state = 'reviewing';
     clearError();
+    setAudioSessionType('playback');
     confirmedMessage = text;
     reviewText.textContent = `“${text}”`;
     statusText.textContent = '제대로 들렸는지 확인해주세요';
@@ -319,11 +331,10 @@
    * ---------------------------------------------------------- */
   function renderGalleryCards(entries) {
     galleryList.innerHTML = '';
+    galleryEmpty.classList.add('hidden');
     if (!entries.length) {
-      galleryEmpty.classList.remove('hidden');
       return;
     }
-    galleryEmpty.classList.add('hidden');
 
     entries.forEach((entry, index) => {
       const card = document.createElement('article');
@@ -342,15 +353,15 @@
   async function openGallery() {
     deskScene.classList.add('hidden');
     galleryScene.classList.remove('hidden');
-    galleryList.innerHTML = '<p class="gallery-empty">불러오는 중…</p>';
+    galleryList.innerHTML = '';
+    galleryEmpty.classList.add('hidden');
+    storageNotice.classList.add('hidden');
     try {
       const entries = await GuestbookAPI.fetchEntries();
       renderGalleryCards(entries);
-      storageNotice.classList.toggle('hidden', !GuestbookAPI.isUsingLocalStorage);
     } catch (err) {
       galleryList.innerHTML = '';
-      galleryEmpty.textContent = '방명록을 불러오지 못했습니다.';
-      galleryEmpty.classList.remove('hidden');
+      galleryEmpty.classList.add('hidden');
     }
   }
 
@@ -365,7 +376,6 @@
   /* ------------------------------------------------------------
    * 초기화
    * ---------------------------------------------------------- */
-  buildDial();
   goIdle();
 
   if (!SpeechController.supported) {

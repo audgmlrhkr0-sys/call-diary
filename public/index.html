@@ -7,103 +7,88 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
-  href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Nanum+Myeongjo:wght@400;700;800&display=swap"
+  href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Nanum+Myeongjo:wght@400;700;800&display=swap"
   rel="stylesheet"
 />
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <div class="vignette" aria-hidden="true"></div>
-  <div class="paper-grain" aria-hidden="true"></div>
-
   <header class="top-bar">
-    <span class="brand">⚜ 전화기 방명록 ⚜</span>
-    <button id="gallery-toggle-btn" class="ornate-btn" type="button">✉ 방명록 보기</button>
+    <button id="gallery-toggle-btn" class="ornate-btn" type="button">방명록 보기</button>
   </header>
 
   <!-- ================= 데스크 / 전화기 화면 ================= -->
   <main id="desk-scene" class="scene" data-state="idle">
-    <div class="desk">
-      <span class="corner corner-tl" aria-hidden="true"></span>
-      <span class="corner corner-tr" aria-hidden="true"></span>
-      <span class="corner corner-bl" aria-hidden="true"></span>
-      <span class="corner corner-br" aria-hidden="true"></span>
+    <div class="desk-column">
+      <h1 class="main-title">
+        <span class="main-title-en">How to be &ldquo;Normal&rdquo;</span>
+        <span class="main-title-ko">전화 방명록</span>
+      </h1>
 
-      <div class="phone-wrap">
-        <div class="phone-cord" aria-hidden="true"></div>
-        <div class="phone-body">
-          <div id="phone-dial" class="phone-dial" aria-hidden="true"></div>
-        </div>
-        <div id="handset" class="handset" aria-hidden="true">
-          <span class="handset-bulb handset-bulb-left"></span>
-          <span class="handset-bar"></span>
-          <span class="handset-bulb handset-bulb-right"></span>
+      <div class="desk">
+        <div id="handset" class="phone-wrap" aria-hidden="true">
+          <img src="../전화기.png" alt="전화기" class="phone-image" />
         </div>
       </div>
 
-      <p id="status-text" class="status-text">
-        수화기 옆, 벨을 울려 오래된 이야기를 남겨보세요
-      </p>
+      <div class="desk-footer">
+        <p id="status-text" class="status-text"></p>
 
-      <!-- idle -->
-      <button id="call-btn" class="btn call-btn" type="button">
-        <span class="btn-icon">☏</span> 전화 걸기
-      </button>
+        <!-- idle -->
+        <button id="call-btn" class="btn call-btn" type="button" aria-label="전화 걸기">☎</button>
 
-      <!-- ringing -->
-      <button id="answer-btn" class="btn answer-btn hidden" type="button">
-        🔔 수화기를 들고, 통화 시작
-      </button>
+        <!-- ringing -->
+        <button id="answer-btn" class="btn answer-btn hidden" type="button">통화 시작</button>
 
-      <!-- listening -->
-      <div id="listening-panel" class="panel listening-panel hidden">
-        <div class="progress-track">
-          <div id="progress-fill" class="progress-fill"></div>
+        <!-- listening -->
+        <div id="listening-panel" class="panel listening-panel hidden">
+          <div class="progress-track">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+          <p id="live-transcript" class="live-transcript">&hellip; 듣고 있어요 &hellip;</p>
+          <button id="cancel-listen-btn" class="btn ghost-btn small" type="button">그만하기</button>
         </div>
-        <p class="hint">실물 수화기를 들고 또렷하게 말씀해주세요 &middot; 약 10초</p>
-        <p id="live-transcript" class="live-transcript">&hellip; 듣고 있어요 &hellip;</p>
-        <button id="cancel-listen-btn" class="btn ghost-btn small" type="button">그만하기</button>
-      </div>
 
-      <!-- reviewing -->
-      <div id="review-panel" class="panel review-panel hidden">
-        <p class="panel-label">이렇게 들었어요</p>
-        <p id="review-text" class="review-text"></p>
-        <div class="panel-actions">
-          <button id="retry-btn" class="btn ghost-btn" type="button">↺ 다시 말하기</button>
-          <button id="confirm-btn" class="btn primary-btn" type="button">이 문장으로 등록 ✓</button>
+        <!-- reviewing -->
+        <div id="review-panel" class="panel review-panel hidden">
+          <p class="panel-label">이렇게 들었어요</p>
+          <p id="review-text" class="review-text"></p>
+          <div class="panel-actions">
+            <button id="retry-btn" class="btn ghost-btn" type="button">↺ 다시 말하기</button>
+            <button id="confirm-btn" class="btn primary-btn" type="button">이 문장으로 등록 ✓</button>
+          </div>
         </div>
-      </div>
 
-      <!-- naming -->
-      <div id="naming-panel" class="panel naming-panel hidden">
-        <p class="panel-label">남기실 이야기</p>
-        <p id="naming-quote" class="naming-quote"></p>
+        <!-- naming -->
+        <div id="naming-panel" class="panel naming-panel hidden">
+          <p class="panel-label">남기실 이야기</p>
+          <p id="naming-quote" class="naming-quote"></p>
 
-        <label class="naming-label" for="name-input">이름을 남겨주세요</label>
-        <input
-          id="name-input"
-          class="name-input"
-          type="text"
-          maxlength="20"
-          autocomplete="off"
-          placeholder="예) 홍 길 동"
-        />
-        <p id="date-preview" class="date-stamp"></p>
+          <label class="naming-label" for="name-input">이름을 남겨주세요</label>
+          <input
+            id="name-input"
+            class="name-input"
+            type="text"
+            maxlength="20"
+            autocomplete="off"
+            placeholder="예) 홍 길 동"
+          />
+          <p id="date-preview" class="date-stamp"></p>
 
-        <div class="panel-actions">
-          <button id="cancel-name-btn" class="btn ghost-btn" type="button">취소</button>
-          <button id="save-btn" class="btn primary-btn" type="button">방명록에 새기기 ✒</button>
+          <div class="panel-actions">
+            <button id="cancel-name-btn" class="btn ghost-btn" type="button">취소</button>
+            <button id="save-btn" class="btn primary-btn" type="button">방명록에 새기기 ✒</button>
+          </div>
         </div>
-      </div>
 
-      <!-- saved -->
-      <div id="saved-panel" class="panel saved-panel hidden">
-        <div class="stamp-mark">전달됨</div>
-        <p>방명록에 새겨졌습니다</p>
-      </div>
+        <!-- saved -->
+        <div id="saved-panel" class="panel saved-panel hidden">
+          <div class="stamp-mark">전달됨</div>
+          <p>방명록에 새겨졌습니다</p>
+        </div>
 
-      <p id="error-text" class="error-text hidden"></p>
+        <p id="error-text" class="error-text hidden"></p>
+      </div>
     </div>
   </main>
 
@@ -111,20 +96,15 @@
   <section id="gallery-scene" class="scene hidden" data-state="gallery">
     <div class="gallery-frame">
       <div class="gallery-header">
-        <h1>방 명 록</h1>
         <button id="back-btn" class="ornate-btn" type="button">← 전화기로 돌아가기</button>
       </div>
-      <p id="storage-notice" class="storage-notice hidden">
-        ⚜ 이 화면은 서버 없이 실행 중이라, 방명록이 이 기기의 브라우저에만 저장됩니다.
-      </p>
+      <p id="storage-notice" class="storage-notice hidden"></p>
       <div id="gallery-list" class="gallery-list"></div>
-      <p id="gallery-empty" class="gallery-empty hidden">
-        아직 등록된 이야기가 없습니다.<br />첫 번째 이야기의 주인공이 되어보세요.
-      </p>
+      <p id="gallery-empty" class="gallery-empty hidden"></p>
     </div>
   </section>
 
-  <audio id="ring-audio" src="assets/sounds/ring.mp3" preload="auto"></audio>
+  <audio id="ring-audio" src="../call.mp3" preload="auto" playsinline webkit-playsinline></audio>
 
   <script src="js/api.js"></script>
   <script src="js/speech.js"></script>

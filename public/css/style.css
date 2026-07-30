@@ -1,7 +1,6 @@
 /* =========================================================
-   전화기 방명록 - 유럽 귀족풍 · 모네 인상주의 색감 스타일시트
-   이미지가 없을 때는 색상/그라데이션으로 대체되며,
-   public/assets/images 안에 실제 파일을 넣으면 자동으로 반영됩니다.
+   전화기 방명록 - 화이트 톤 미니멀 스타일시트
+   전화기 사진은 프로젝트 루트의 전화기.png 파일을 그대로 사용합니다.
    ========================================================= */
 
 :root {
@@ -45,47 +44,13 @@ html, body {
 body {
   margin: 0;
   min-height: 100vh;
+  height: 100vh;
   font-family: var(--font-type);
   font-size: 1.08rem;
   color: var(--color-ink);
-  background-color: var(--color-wood-dark);
-  background-image:
-    url("../assets/images/desk-background.jpg"),
-    radial-gradient(circle at 18% 24%, rgba(147, 183, 204, 0.5), transparent 42%),
-    radial-gradient(circle at 82% 18%, rgba(221, 179, 191, 0.45), transparent 46%),
-    radial-gradient(circle at 26% 82%, rgba(162, 189, 151, 0.4), transparent 48%),
-    radial-gradient(circle at 78% 78%, rgba(185, 166, 207, 0.5), transparent 50%),
-    linear-gradient(160deg, #2c3358 0%, #3b2f57 55%, #2a2138 100%);
-  background-size: cover, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  background: #fff8dc;
   overflow: hidden;
   position: relative;
-}
-
-/* 저녁 살롱의 은은한 비네트 + 그레인 오버레이 */
-.vignette {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 50;
-  background: radial-gradient(ellipse at center, transparent 42%, rgba(16, 12, 28, 0.6) 100%);
-}
-
-.paper-grain {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 49;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
-  background-image: repeating-linear-gradient(
-      0deg, rgba(255, 255, 255, 0.6) 0px, transparent 1px, transparent 2px
-    ),
-    repeating-linear-gradient(
-      90deg, rgba(0, 0, 0, 0.4) 0px, transparent 1px, transparent 2px
-    );
 }
 
 .hidden {
@@ -101,40 +66,35 @@ body {
   z-index: 40;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 18px 32px;
 }
 
-.brand {
-  font-family: var(--font-display);
-  color: var(--color-brass-light);
-  letter-spacing: 0.12em;
-  font-size: 1.05rem;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-}
-
 .ornate-btn {
-  font-family: var(--font-type);
-  background: linear-gradient(180deg, var(--color-parchment), var(--color-parchment-dark));
-  color: var(--color-ink);
-  border: 2px solid var(--color-brass);
-  border-radius: 6px;
-  padding: 10px 18px;
-  font-size: 0.85rem;
-  letter-spacing: 0.03em;
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  font-weight: 700;
+  background: #000000;
+  color: #ffe14a;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 28px;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  box-shadow: 0 3px 0 var(--color-wood-dark), 0 6px 10px rgba(0, 0, 0, 0.4);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: none;
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .ornate-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 0 var(--color-wood-dark), 0 10px 14px rgba(0, 0, 0, 0.45);
+  filter: none;
+  background: #1a1a1a;
+  box-shadow: none;
 }
 
 .ornate-btn:active {
   transform: translateY(1px);
-  box-shadow: 0 2px 0 var(--color-wood-dark), 0 4px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
 }
 
 /* ---------------- 공통 장면(scene) ---------------- */
@@ -144,184 +104,98 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 90px 24px 40px;
+  padding: 72px 20px 24px;
+  overflow: hidden;
 }
 
 /* ---------------- 데스크(전화기 액자) ---------------- */
+.desk-column {
+  width: min(560px, 86vw);
+  max-height: calc(100vh - 96px);
+  overflow: hidden;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main-title {
+  margin: 0 0 28px;
+  text-align: center;
+  color: #111111;
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.main-title-en,
+.main-title-ko {
+  display: block;
+}
+
+.main-title-en {
+  font-size: clamp(1.35rem, 3.4vw, 1.85rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.main-title-ko {
+  font-size: clamp(1.15rem, 2.8vw, 1.45rem);
+  margin-top: 4px;
+  letter-spacing: 0.08em;
+}
+
 .desk {
   position: relative;
-  width: min(560px, 92vw);
-  max-height: 88vh;
-  overflow-y: auto;
-  background-image:
-    url("../assets/images/paper-texture.jpg"),
-    radial-gradient(circle at 12% 10%, rgba(147, 183, 204, 0.22), transparent 40%),
-    radial-gradient(circle at 90% 15%, rgba(221, 179, 191, 0.22), transparent 42%),
-    radial-gradient(circle at 85% 90%, rgba(162, 189, 151, 0.2), transparent 45%),
-    linear-gradient(160deg, var(--color-parchment) 0%, var(--color-parchment-dark) 100%);
-  background-size: cover, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
-  background-repeat: no-repeat;
-  background-blend-mode: multiply, normal, normal, normal, normal;
-  border: 10px solid var(--color-wood);
-  border-radius: 10px;
-  box-shadow:
-    0 0 0 4px var(--color-brass),
-    0 0 0 6px var(--color-wood-dark),
-    0 25px 60px var(--color-shadow);
-  padding: 44px 36px 36px;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #ececec;
+  border-radius: 20px;
+  box-shadow: 0 24px 50px rgba(20, 16, 30, 0.14);
+  padding: 8px;
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+.desk-footer {
   text-align: center;
+  padding-top: 18px;
+  flex: 0 0 auto;
 }
 
-.corner {
-  position: absolute;
-  width: 46px;
-  height: 46px;
-  background-image: url("../assets/images/ornament-corner.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  opacity: 0.85;
-}
-
-.corner::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-top: 3px solid var(--color-brass);
-  border-left: 3px solid var(--color-brass);
-  border-radius: 4px 0 0 0;
-}
-
-.corner-tl { top: 8px; left: 8px; }
-.corner-tr { top: 8px; right: 8px; transform: scaleX(-1); }
-.corner-bl { bottom: 8px; left: 8px; transform: scaleY(-1); }
-.corner-br { bottom: 8px; right: 8px; transform: scale(-1, -1); }
-
-/* ---------------- 전화기 일러스트 ---------------- */
+/* ---------------- 전화기 사진 ---------------- */
 .phone-wrap {
   position: relative;
-  width: 240px;
-  height: 190px;
-  margin: 0 auto 22px;
-}
-
-.phone-cord {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  width: 70px;
-  height: 40px;
-  transform: translateX(-50%);
-  border: 5px solid var(--color-wood-dark);
-  border-top: none;
-  border-radius: 0 0 50px 50px;
-  opacity: 0.7;
-}
-
-.phone-body {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 220px;
-  height: 130px;
-  border-radius: 45% 45% 20px 20px / 65% 65% 20px 20px;
-  background-image:
-    url("../assets/images/phone-body.png"),
-    linear-gradient(160deg, #4b3a63 0%, #201a33 75%);
-  background-size: cover, cover;
-  background-position: center;
-  border: 3px solid var(--color-brass);
-  box-shadow: inset 0 6px 14px rgba(0, 0, 0, 0.5), 0 14px 24px rgba(0, 0, 0, 0.45);
-}
-
-.phone-dial {
-  position: absolute;
-  top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 108px;
-  height: 108px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fbf3dd, var(--color-parchment-dark) 70%);
-  box-shadow: inset 0 0 0 6px var(--color-brass), 0 4px 10px rgba(0, 0, 0, 0.4);
-}
-
-.phone-dial .dial-hole {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 20px;
-  margin: -10px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #4a3d63, var(--color-ink) 75%);
+  width: 100%;
+  max-height: calc(100vh - 280px);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
-  font-size: 0.7rem;
-  color: var(--color-brass-light);
-  transform: rotate(var(--angle)) translate(38px) rotate(calc(-1 * var(--angle)));
 }
 
-.phone-dial::after {
-  content: "";
-  position: absolute;
-  inset: 30%;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #3d3159, var(--color-wood-dark));
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+.phone-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(100vh - 280px);
+  object-fit: contain;
+  border-radius: 12px;
 }
-
-.handset {
-  position: absolute;
-  top: -6px;
-  left: 50%;
-  width: 210px;
-  height: 60px;
-  transform: translateX(-50%) rotate(-3deg);
-  transform-origin: center;
-}
-
-.handset-bar {
-  position: absolute;
-  left: 30px;
-  right: 30px;
-  top: 22px;
-  height: 16px;
-  border-radius: 10px;
-  background: linear-gradient(180deg, #3d3159, #1a1530);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-}
-
-.handset-bulb {
-  position: absolute;
-  top: 0;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #4b3a63, #1a1530 75%);
-  border: 2px solid var(--color-brass);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
-}
-
-.handset-bulb-left { left: 0; }
-.handset-bulb-right { right: 0; }
 
 @keyframes handset-shake {
-  0%, 100% { transform: translateX(-50%) rotate(-3deg) translate(0, 0); }
-  10% { transform: translateX(-50%) rotate(-9deg) translate(-4px, -3px); }
-  20% { transform: translateX(-50%) rotate(4deg) translate(4px, 0); }
-  30% { transform: translateX(-50%) rotate(-6deg) translate(-3px, 2px); }
-  40% { transform: translateX(-50%) rotate(7deg) translate(3px, -2px); }
-  50% { transform: translateX(-50%) rotate(-8deg) translate(-4px, 1px); }
-  60% { transform: translateX(-50%) rotate(5deg) translate(4px, 2px); }
-  70% { transform: translateX(-50%) rotate(-5deg) translate(-2px, -2px); }
-  80% { transform: translateX(-50%) rotate(6deg) translate(3px, 1px); }
-  90% { transform: translateX(-50%) rotate(-4deg) translate(-2px, 0); }
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-4px, -3px) rotate(-3deg); }
+  20% { transform: translate(4px, 0) rotate(2deg); }
+  30% { transform: translate(-3px, 2px) rotate(-2deg); }
+  40% { transform: translate(3px, -2px) rotate(2deg); }
+  50% { transform: translate(-4px, 1px) rotate(-3deg); }
+  60% { transform: translate(4px, 2px) rotate(2deg); }
+  70% { transform: translate(-2px, -2px) rotate(-1deg); }
+  80% { transform: translate(3px, 1px) rotate(1deg); }
+  90% { transform: translate(-2px, 0) rotate(-1deg); }
 }
 
-.handset.ringing {
+#handset.ringing {
   animation: handset-shake 0.22s infinite;
 }
 
@@ -331,8 +205,12 @@ body {
   font-style: italic;
   font-size: 1.05rem;
   color: var(--color-ink-soft);
-  margin: 0 0 26px;
-  min-height: 1.4em;
+  margin: 0 0 14px;
+  min-height: 0;
+}
+
+.status-text:empty {
+  display: none;
 }
 
 /* ---------------- 버튼 공통 ---------------- */
@@ -352,26 +230,50 @@ body {
 }
 
 .call-btn {
-  background: linear-gradient(180deg, var(--color-accent-red), var(--color-accent-red-dark));
-  color: var(--color-cream);
-  box-shadow: 0 4px 0 #3a1729, 0 10px 20px rgba(0, 0, 0, 0.4);
-  font-size: 1.1rem;
-  padding: 16px 34px;
+  width: 88px;
+  height: 88px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #000000;
+  color: #ffe14a;
+  box-shadow: none;
+  font-size: 2.8rem;
+  line-height: 1;
+  padding: 0;
+  border-radius: 50%;
 }
 
-.call-btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
-.call-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #3a1729; }
+.call-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  filter: none;
+  background: #1a1a1a;
+}
+.call-btn:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: none;
+}
 
 .answer-btn {
-  background: linear-gradient(180deg, var(--color-brass-light), var(--color-brass));
-  color: var(--color-ink);
-  box-shadow: 0 4px 0 #8c6f28, 0 10px 20px rgba(0, 0, 0, 0.35);
-  animation: pulse-btn 1s ease-in-out infinite;
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  font-weight: 700;
+  background: #000000;
+  color: #ffe14a;
+  box-shadow: none;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  padding: 16px 28px;
+  border-radius: 12px;
+  animation: none;
 }
 
-@keyframes pulse-btn {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.045); }
+.answer-btn:hover {
+  transform: translateY(-2px);
+  background: #1a1a1a;
+}
+
+.answer-btn:active {
+  transform: translateY(1px);
 }
 
 .primary-btn {
@@ -441,12 +343,6 @@ body {
   width: 100%;
   background: linear-gradient(90deg, var(--color-accent-red), var(--color-brass));
   transition: width 10s linear;
-}
-
-.hint {
-  font-size: 0.85rem;
-  color: var(--color-ink-soft);
-  margin: 0 0 14px;
 }
 
 .live-transcript {
@@ -565,32 +461,22 @@ body {
 
 /* ================= 갤러리 화면 ================= */
 .gallery-frame {
-  width: min(920px, 94vw);
-  max-height: 86vh;
+  width: min(1240px, 96vw);
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
-  background-image:
-    url("../assets/images/paper-texture.jpg"),
-    radial-gradient(circle at 15% 15%, rgba(185, 166, 207, 0.22), transparent 42%),
-    radial-gradient(circle at 88% 85%, rgba(147, 183, 204, 0.2), transparent 45%),
-    linear-gradient(160deg, var(--color-parchment) 0%, var(--color-parchment-dark) 100%);
-  background-size: cover, 100% 100%, 100% 100%, 100% 100%;
-  background-repeat: no-repeat;
-  background-blend-mode: multiply, normal, normal, normal;
-  border: 10px solid var(--color-wood);
-  border-radius: 10px;
-  box-shadow:
-    0 0 0 4px var(--color-brass),
-    0 0 0 6px var(--color-wood-dark),
-    0 25px 60px var(--color-shadow);
-  padding: 30px 32px;
+  background: #ffffff;
+  border: 1px solid #ececec;
+  border-radius: 24px;
+  box-shadow: 0 30px 70px rgba(20, 16, 30, 0.14);
+  padding: 40px 48px;
   overflow: hidden;
 }
 
 .gallery-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 20px;
   border-bottom: 2px solid var(--color-brass);
   padding-bottom: 14px;
@@ -682,12 +568,10 @@ body {
 }
 
 /* ---------------- 스크롤바 (레트로 톤) ---------------- */
-.desk::-webkit-scrollbar,
 .gallery-list::-webkit-scrollbar {
   width: 8px;
 }
 
-.desk::-webkit-scrollbar-thumb,
 .gallery-list::-webkit-scrollbar-thumb {
   background: var(--color-brass);
   border-radius: 4px;
@@ -706,14 +590,18 @@ body {
   }
   .ornate-btn {
     white-space: nowrap;
-    font-size: 0.78rem;
-    padding: 8px 14px;
+    font-size: 1rem;
+    padding: 14px 22px;
   }
 }
 
 @media (max-width: 480px) {
-  .desk { padding: 34px 20px 26px; }
-  .phone-wrap { width: 200px; height: 160px; }
-  .phone-dial { width: 90px; height: 90px; }
+  .desk { padding: 6px; }
+  .desk-footer { padding-top: 14px; }
+  .call-btn {
+    width: 76px;
+    height: 76px;
+    font-size: 2.2rem;
+  }
   .gallery-frame { padding: 20px 16px; }
 }

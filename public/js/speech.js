@@ -51,12 +51,18 @@ const SpeechController = (() => {
     };
 
     recognition.onerror = (event) => {
+      // 안내성 에러(마이크 권한, 무음 등)는 화면에 띄우지 않습니다.
+      if (
+        event.error === 'no-speech' ||
+        event.error === 'not-allowed' ||
+        event.error === 'service-not-allowed' ||
+        event.error === 'audio-capture'
+      ) {
+        onError && onError('');
+        return;
+      }
       let message = '음성 인식 중 오류가 발생했습니다. 다시 시도해주세요.';
-      if (event.error === 'no-speech') {
-        message = '목소리가 들리지 않았어요. 조금 더 가까이, 또렷하게 말씀해주세요.';
-      } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        message = '마이크 권한이 필요합니다. 브라우저 설정에서 마이크를 허용해주세요.';
-      } else if (event.error === 'network') {
+      if (event.error === 'network') {
         message = '음성 인식 서비스에 연결할 수 없습니다. 인터넷 연결을 확인해주세요.';
       }
       onError && onError(message);

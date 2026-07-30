@@ -56,6 +56,19 @@ async function writeEntries(entries) {
 app.use(express.json({ limit: '200kb' }));
 app.use(express.static(PUBLIC_DIR));
 
+// 벨소리(call.mp3), 전화기 사진(전화기.png) 등은 public/ 대신 프로젝트 루트 폴더에
+// 바로 두는 경우가 많아서, 루트에 있는 미디어 파일 요청을 여기서 직접 서빙합니다.
+const ROOT_ASSET_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.mp3', '.wav', '.m4a']);
+app.get('/:filename', (req, res, next) => {
+  const ext = path.extname(req.params.filename).toLowerCase();
+  if (!ROOT_ASSET_EXTENSIONS.has(ext)) return next();
+  res.sendFile(path.join(__dirname, req.params.filename), (err) => {
+    if (err && !res.headersSent) {
+      res.status(404).end();
+    }
+  });
+});
+
 // 저장된 모든 방명록 항목을 최신순으로 반환
 app.get('/api/entries', async (req, res) => {
   const entries = await readEntries();
