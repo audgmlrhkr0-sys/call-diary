@@ -218,6 +218,12 @@
     startRing();
     statusText.innerHTML = '따르릉 &mdash; 전화가 오고 있습니다';
     showOnly(answerBtn);
+
+    // 사용자 제스처 시점에 마이크 권한을 미리 받아 두면,
+    // 같은 주소에서는 새로고침 후에도 브라우저가 다시 묻지 않습니다.
+    if (SpeechController.ensureMicrophoneAccess) {
+      SpeechController.ensureMicrophoneAccess().catch(() => {});
+    }
   }
 
   function goListening() {
@@ -246,7 +252,6 @@
       onEnd: (finalText) => {
         if (deskScene.dataset.state !== 'listening') return;
         if (!finalText) {
-          showError('문장을 알아듣지 못했어요. 다시 시도해주세요.');
           goRingingReadyForRetry();
           return;
         }
@@ -254,7 +259,7 @@
       },
       onError: (message) => {
         if (deskScene.dataset.state !== 'listening') return;
-        showError(message);
+        if (message) showError(message);
         goRingingReadyForRetry();
       },
     });
@@ -281,7 +286,7 @@
   function goNaming() {
     deskScene.dataset.state = 'naming';
     clearError();
-    statusText.textContent = '방명록에 남길 이름을 적어주세요';
+    statusText.textContent = '';
     namingQuote.textContent = `“${confirmedMessage}”`;
     nameInput.value = '';
     datePreview.textContent = formatPostmarkDate(new Date());

@@ -166,6 +166,26 @@ body {
   max-width: 100%;
 }
 
+/* 음성 인식 이후(이름 작성/완료): 전화기·네모창 숨기고 중앙 배치 */
+#desk-scene[data-state="naming"] .main-title,
+#desk-scene[data-state="naming"] .desk,
+#desk-scene[data-state="saved"] .main-title,
+#desk-scene[data-state="saved"] .desk {
+  display: none;
+}
+
+#desk-scene[data-state="naming"] .desk-column,
+#desk-scene[data-state="saved"] .desk-column {
+  justify-content: center;
+  max-height: calc(100vh - 96px);
+}
+
+#desk-scene[data-state="naming"] .desk-footer,
+#desk-scene[data-state="saved"] .desk-footer {
+  padding-top: 0;
+  width: min(480px, 92vw);
+}
+
 /* ---------------- 전화기 사진 ---------------- */
 .phone-wrap {
   position: relative;
@@ -422,6 +442,11 @@ body {
 /* ---------------- 이름 입력 패널 ---------------- */
 .naming-panel .panel-label {
   color: #c9a000;
+}
+
+.naming-name-label {
+  display: block;
+  margin-top: 8px;
 }
 
 .naming-quote {
