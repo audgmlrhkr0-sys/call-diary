@@ -14,6 +14,7 @@ create table if not exists public.entries (
 
 -- 기존 테이블에 question 열이 없으면 추가
 alter table public.entries add column if not exists question text;
+notify pgrst, 'reload schema';
 
 alter table public.entries enable row level security;
 

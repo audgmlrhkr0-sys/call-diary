@@ -60,7 +60,6 @@
   const confirmBtn = document.getElementById('confirm-btn');
 
   const namingPanel = document.getElementById('naming-panel');
-  const namingQuestionEl = document.getElementById('naming-question');
   const namingQuote = document.getElementById('naming-quote');
   const nameInput = document.getElementById('name-input');
   const datePreview = document.getElementById('date-preview');
@@ -144,7 +143,6 @@
     const value = text || '';
     if (promptQuestionEl) promptQuestionEl.textContent = value;
     if (reviewQuestionEl) reviewQuestionEl.textContent = value;
-    if (namingQuestionEl) namingQuestionEl.textContent = value;
   }
 
   function delay(ms) {
@@ -516,7 +514,6 @@
     deskScene.dataset.state = 'naming';
     clearError();
     statusText.textContent = '';
-    setPromptQuestion(confirmedQuestion);
     namingQuote.textContent = `“${confirmedMessage}”`;
     nameInput.value = '';
     datePreview.textContent = formatPostmarkDate(new Date());

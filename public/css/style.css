@@ -484,17 +484,22 @@ body {
 /* ---------------- 안내 질문 (연하고 작게) ---------------- */
 .prompt-question {
   font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 400;
   line-height: 1.45;
-  color: rgba(43, 33, 56, 0.45);
-  margin: 0 0 12px;
+  color: rgba(43, 33, 56, 0.38);
+  margin: 8px 0 4px;
   word-break: keep-all;
-  min-height: 1.2em;
+  text-align: center;
 }
 
 .prompt-question:empty {
   display: none;
+}
+
+.listening-panel .prompt-question {
+  margin-top: 10px;
+  margin-bottom: 0;
 }
 
 /* ---------------- 듣는 중 패널 ---------------- */

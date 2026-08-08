@@ -181,19 +181,45 @@ const GuestbookAPI = (() => {
         }
       }
 
-      const { data, error } = await client
+      const rowPayload = {
+        id,
+        name: cleanName,
+        message: cleanMessage,
+        date: formatPostmarkDate(now),
+        audio_path: audioPath,
+        created_at: now.toISOString(),
+      };
+      if (cleanQuestion) {
+        rowPayload.question = cleanQuestion;
+      }
+
+      let { data, error } = await client
         .from('entries')
-        .insert({
-          id,
-          name: cleanName,
-          message: cleanMessage,
-          question: cleanQuestion || null,
-          date: formatPostmarkDate(now),
-          audio_path: audioPath,
-          created_at: now.toISOString(),
-        })
+        .insert(rowPayload)
         .select('*')
         .single();
+
+      // question 열이 아직 없으면(스키마 미반영) 질문 없이 한 번 더 저장
+      if (
+        error &&
+        cleanQuestion &&
+        /question/i.test(error.message || '') &&
+        /schema cache|column/i.test(error.message || '')
+      ) {
+        console.warn(
+          'Supabase entries.question 열이 없습니다. SQL로 추가한 뒤 스키마를 새로고침하세요.',
+          error.message
+        );
+        delete rowPayload.question;
+        ({ data, error } = await client
+          .from('entries')
+          .insert(rowPayload)
+          .select('*')
+          .single());
+        if (!error && data) {
+          data = { ...data, question: cleanQuestion };
+        }
+      }
 
       if (error) throw new Error(error.message || '저장 중 문제가 발생했습니다.');
       return mapSupabaseRow(data);
