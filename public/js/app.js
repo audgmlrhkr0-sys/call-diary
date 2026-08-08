@@ -172,6 +172,7 @@
     clearTimeout(promptDelayTimerId);
     promptDelayTimerId = null;
     setListeningQuestion('');
+    stopPromptBufferSource();
     if (!promptAudio) return;
     promptAudio.onended = null;
     promptAudio.onerror = null;
@@ -181,47 +182,39 @@
     promptAudio.load();
   }
 
-  async function unlockPromptAudio(url) {
-    if (!promptAudio) return false;
-
-    promptAudio.muted = true;
-    promptAudio.src = url;
-
-    try {
-      // await 없이 바로 play() 해야 사용자 제스처가 유지됩니다.
-      const playPromise = promptAudio.play();
-      if (playPromise && typeof playPromise.then === 'function') {
-        await playPromise;
-      }
-      promptAudio.pause();
-      promptAudio.currentTime = 0;
-      promptAudio.muted = false;
-      return true;
-    } catch (err) {
-      console.warn('안내 음성을 준비하지 못했습니다.', url, err);
-      promptAudio.muted = false;
-      return false;
-    }
-  }
-
   async function playRandomPromptVoice() {
-    if (!promptAudio) return;
-
     setAudioSessionType('playback');
     const prompt = pickRandomPromptVoice();
     confirmedQuestion = prompt.question;
     setPromptQuestion(prompt.question);
 
-    // 통화 시작 클릭(사용자 제스처) 안에서 먼저 오디오를 잠금 해제합니다.
-    const ready = await unlockPromptAudio(prompt.src);
-    if (!ready) {
-      console.warn('안내 음성 파일을 재생할 수 없습니다:', prompt.src);
-      return;
-    }
+    // 사용자 제스처 안에서 AudioContext를 깨워 둡니다.
+    await resumeAudioCtx();
     if (deskScene.dataset.state !== 'listening') return;
 
     await delay(1000);
     if (deskScene.dataset.state !== 'listening') return;
+
+    // iOS Safari: HTMLAudioElement 직후 SpeechRecognition이 자주 깨져 Web Audio로 재생합니다.
+    try {
+      const buffer = await loadPromptAudioBuffer(prompt.src);
+      if (deskScene.dataset.state !== 'listening') return;
+      setListeningQuestion(prompt.question);
+      await playPromptBuffer(buffer);
+      setListeningQuestion('');
+      return;
+    } catch (err) {
+      console.warn('Web Audio 안내 음성 실패, HTMLAudio로 재시도:', prompt.src, err);
+    }
+
+    if (!promptAudio) return;
+    promptAudio.muted = false;
+    promptAudio.src = prompt.src;
+    try {
+      promptAudio.currentTime = 0;
+    } catch (e) {
+      // ignore
+    }
 
     await new Promise((resolve) => {
       let settled = false;
@@ -240,17 +233,11 @@
         finish();
       };
 
-      try {
-        promptAudio.currentTime = 0;
-      } catch (err) {
-        // ignore
-      }
-
       setListeningQuestion(prompt.question);
       const playPromise = promptAudio.play();
       if (playPromise && typeof playPromise.then === 'function') {
-        playPromise.catch((err) => {
-          console.warn('안내 음성 재생 실패:', prompt.src, err);
+        playPromise.catch((playErr) => {
+          console.warn('안내 음성 재생 실패:', prompt.src, playErr);
           finish();
         });
       }
@@ -281,6 +268,8 @@
   let audioCtx = null;
   let ringIntervalId = null;
   let usingAudioFile = false;
+  let promptBufferSource = null;
+  const promptAudioBufferCache = new Map();
 
   function getAudioCtx() {
     if (!audioCtx) {
@@ -288,6 +277,86 @@
       if (AC) audioCtx = new AC();
     }
     return audioCtx;
+  }
+
+  async function resumeAudioCtx() {
+    const ctx = getAudioCtx();
+    if (ctx && ctx.state === 'suspended') {
+      try {
+        await ctx.resume();
+      } catch (err) {
+        // ignore
+      }
+    }
+    return ctx;
+  }
+
+  function stopPromptBufferSource() {
+    if (!promptBufferSource) return;
+    try {
+      promptBufferSource.onended = null;
+      promptBufferSource.stop(0);
+    } catch (err) {
+      // already stopped
+    }
+    try {
+      promptBufferSource.disconnect();
+    } catch (err) {
+      // ignore
+    }
+    promptBufferSource = null;
+  }
+
+  async function loadPromptAudioBuffer(url) {
+    if (promptAudioBufferCache.has(url)) {
+      return promptAudioBufferCache.get(url);
+    }
+    const ctx = await resumeAudioCtx();
+    if (!ctx) throw new Error('Web Audio 불가');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`안내 음성 로드 실패: ${url}`);
+    const data = await res.arrayBuffer();
+    // Safari는 decodeAudioData가 ArrayBuffer를 detach 하는 경우가 있어 복사본을 넘깁니다.
+    const buffer = await ctx.decodeAudioData(data.slice(0));
+    promptAudioBufferCache.set(url, buffer);
+    return buffer;
+  }
+
+  function playPromptBuffer(buffer) {
+    return new Promise(async (resolve) => {
+      const ctx = await resumeAudioCtx();
+      if (!ctx) {
+        resolve(false);
+        return;
+      }
+
+      stopPromptBufferSource();
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      promptBufferSource = source;
+
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        if (promptBufferSource === source) promptBufferSource = null;
+        try {
+          source.disconnect();
+        } catch (err) {
+          // ignore
+        }
+        resolve(true);
+      };
+
+      source.onended = finish;
+      try {
+        source.start(0);
+      } catch (err) {
+        console.warn('Web Audio 안내 음성 시작 실패', err);
+        finish();
+      }
+    });
   }
 
   function playBellBurst() {
@@ -429,6 +498,7 @@
   async function beginListeningSession() {
     setLiveTranscriptStatus('… 답변 중 …');
     setListeningQuestion('');
+    statusText.textContent = '';
     listenConfirmBtn.disabled = true;
     progressFill.style.transition = 'none';
     progressFill.style.width = '100%';
@@ -439,21 +509,33 @@
     });
 
     recordedAudioBlob = null;
-    try {
-      await AudioRecorder.start();
-    } catch (err) {
-      // 녹음 실패해도 음성 인식은 시도합니다.
-      console.warn('음성 녹음을 시작하지 못했습니다.', err);
-    }
+    let recorderStarted = false;
+    // iOS: concurrent MediaRecorder steals the mic from SpeechRecognition.
+    const allowRecorder = !SpeechController.isIOS;
+
+    const startRecorderAfterSpeech = async () => {
+      if (!allowRecorder || recorderStarted || deskScene.dataset.state !== 'listening') return;
+      recorderStarted = true;
+      try {
+        await AudioRecorder.start();
+      } catch (err) {
+        console.warn('음성 녹음을 시작하지 못했습니다.', err);
+      }
+    };
 
     SpeechController.start({
+      onStart: () => {
+        setTimeout(() => {
+          startRecorderAfterSpeech();
+        }, 120);
+      },
       onInterim: (text) => {
         setLiveTranscriptStatus(text || '… 답변 중 …');
         listenConfirmBtn.disabled = !text;
       },
       onEnd: async (finalText) => {
         if (deskScene.dataset.state !== 'listening') return;
-        recordedAudioBlob = await AudioRecorder.stop();
+        recordedAudioBlob = recorderStarted ? await AudioRecorder.stop() : null;
         if (!finalText) {
           recordedAudioBlob = null;
           goRingingReadyForRetry();
@@ -469,6 +551,12 @@
         goRingingReadyForRetry();
       },
     });
+
+    if (allowRecorder) {
+      setTimeout(() => {
+        startRecorderAfterSpeech();
+      }, 400);
+    }
   }
 
   async function goListening() {
@@ -481,6 +569,19 @@
     setAudioSessionType('playback');
     showOnly(listeningPanel);
 
+    resumeAudioCtx();
+    if (SpeechController.ensureMicrophoneAccess) {
+      SpeechController.ensureMicrophoneAccess({ keepAlive: false }).catch(() => {});
+    }
+
+    if (!window.isSecureContext) {
+      const host = window.location.hostname;
+      if (host !== 'localhost' && host !== '127.0.0.1') {
+        statusText.textContent =
+          '주의: http://IP 주소에서는 아이패드 음성인식이 막힐 수 있습니다. HTTPS를 사용해주세요.';
+      }
+    }
+
     setLiveTranscriptStatus('… 상대방이 말하는 중 …');
     setListeningQuestion('');
     listenConfirmBtn.disabled = true;
@@ -490,7 +591,13 @@
     await playRandomPromptVoice();
     if (deskScene.dataset.state !== 'listening') return;
 
+    stopPromptAudio();
+    setAudioSessionType('playback');
+    await new Promise((resolve) => setTimeout(resolve, 80));
     setAudioSessionType('play-and-record');
+    await new Promise((resolve) => setTimeout(resolve, SpeechController.isIOS ? 700 : 150));
+    if (deskScene.dataset.state !== 'listening') return;
+
     beginListeningSession();
   }
 
