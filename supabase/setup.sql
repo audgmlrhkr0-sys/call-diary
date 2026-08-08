@@ -6,10 +6,14 @@ create table if not exists public.entries (
   id uuid primary key default gen_random_uuid(),
   name text not null default '이름 없음',
   message text not null,
+  question text,
   date text not null,
   audio_path text,
   created_at timestamptz not null default now()
 );
+
+-- 기존 테이블에 question 열이 없으면 추가
+alter table public.entries add column if not exists question text;
 
 alter table public.entries enable row level security;
 

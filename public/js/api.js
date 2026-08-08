@@ -100,6 +100,7 @@ const GuestbookAPI = (() => {
       id: row.id,
       name: row.name,
       message: row.message,
+      question: row.question || '',
       date: row.date,
       audioUrl,
       audioPath: row.audio_path || '',
@@ -148,7 +149,7 @@ const GuestbookAPI = (() => {
     return entries;
   }
 
-  async function createEntry(name, message, audioBlob) {
+  async function createEntry(name, message, audioBlob, question) {
     if (typeof message !== 'string' || !message.trim()) {
       throw new Error('등록할 메시지가 비어 있습니다.');
     }
@@ -156,6 +157,8 @@ const GuestbookAPI = (() => {
     const mode = await detectBackend();
     const cleanName = (typeof name === 'string' && name.trim()) || '이름 없음';
     const cleanMessage = message.trim().slice(0, 500);
+    const cleanQuestion =
+      typeof question === 'string' ? question.trim().slice(0, 200) : '';
     const now = new Date();
 
     if (mode === 'supabase') {
@@ -184,6 +187,7 @@ const GuestbookAPI = (() => {
           id,
           name: cleanName,
           message: cleanMessage,
+          question: cleanQuestion || null,
           date: formatPostmarkDate(now),
           audio_path: audioPath,
           created_at: now.toISOString(),
@@ -199,6 +203,7 @@ const GuestbookAPI = (() => {
       const payload = {
         name: cleanName,
         message: cleanMessage,
+        question: cleanQuestion,
       };
       if (audioBlob && audioBlob.size > 0) {
         payload.audioBase64 = await blobToBase64(audioBlob);
@@ -222,6 +227,7 @@ const GuestbookAPI = (() => {
       id: makeId(),
       name: cleanName,
       message: cleanMessage,
+      question: cleanQuestion,
       date: formatPostmarkDate(now),
       createdAt: now.toISOString(),
       audioUrl: '',

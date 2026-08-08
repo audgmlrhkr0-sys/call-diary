@@ -93,7 +93,7 @@ app.get('/api/entries', async (req, res) => {
 });
 
 app.post('/api/entries', async (req, res) => {
-  const { name, message, audioBase64, audioMimeType } = req.body || {};
+  const { name, message, question, audioBase64, audioMimeType } = req.body || {};
 
   if (typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ error: '등록할 메시지가 비어 있습니다.' });
@@ -121,6 +121,8 @@ app.post('/api/entries', async (req, res) => {
     id,
     name: (typeof name === 'string' && name.trim()) || '이름 없음',
     message: message.trim().slice(0, 500),
+    question:
+      typeof question === 'string' ? question.trim().slice(0, 200) : '',
     date: formatPostmarkDate(now),
     createdAt: now.toISOString(),
     audioUrl,

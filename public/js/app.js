@@ -49,15 +49,18 @@
   const listeningPanel = document.getElementById('listening-panel');
   const progressFill = document.getElementById('progress-fill');
   const liveTranscript = document.getElementById('live-transcript');
+  const promptQuestionEl = document.getElementById('prompt-question');
   const listenCancelBtn = document.getElementById('listen-cancel-btn');
   const listenConfirmBtn = document.getElementById('listen-confirm-btn');
 
   const reviewPanel = document.getElementById('review-panel');
+  const reviewQuestionEl = document.getElementById('review-question');
   const reviewText = document.getElementById('review-text');
   const retryBtn = document.getElementById('retry-btn');
   const confirmBtn = document.getElementById('confirm-btn');
 
   const namingPanel = document.getElementById('naming-panel');
+  const namingQuestionEl = document.getElementById('naming-question');
   const namingQuote = document.getElementById('naming-quote');
   const nameInput = document.getElementById('name-input');
   const datePreview = document.getElementById('date-preview');
@@ -69,6 +72,7 @@
   const promptAudio = document.getElementById('prompt-audio');
 
   let confirmedMessage = '';
+  let confirmedQuestion = '';
   let recordedAudioBlob = null;
   let savedResetTimerId = null;
   let promptDelayTimerId = null;
@@ -77,16 +81,34 @@
   let playingEntryId = null;
 
   const PROMPT_VOICES = [
-    'assets/sounds/prompts/minsung.m4a',
-    'assets/sounds/prompts/minsung2.m4a',
-    'assets/sounds/prompts/seoyeon.m4a',
-    'assets/sounds/prompts/seoyeon2.m4a',
-    'assets/sounds/prompts/jisu.m4a',
-    'assets/sounds/prompts/jisu2.m4a',
+    {
+      src: 'assets/sounds/prompts/minsung.m4a',
+      question: '미술관에 방문하게 된 계기는?',
+    },
+    {
+      src: 'assets/sounds/prompts/minsung2.m4a',
+      question: '나만의 규칙을 말해 주세요!',
+    },
+    {
+      src: 'assets/sounds/prompts/seoyeon.m4a',
+      question: '당신에게 기준이란?',
+    },
+    {
+      src: 'assets/sounds/prompts/seoyeon2.m4a',
+      question: '가장 기억에 남는 작품을 말해 주세요!',
+    },
+    {
+      src: 'assets/sounds/prompts/jisu.m4a',
+      question: '오늘의 기분을 한 줄로 소개해 주세요!',
+    },
+    {
+      src: 'assets/sounds/prompts/jisu2.m4a',
+      question: '여러분에게 미술관이란?',
+    },
   ];
 
   let promptVoiceQueue = [];
-  let lastPromptVoice = '';
+  let lastPromptVoiceSrc = '';
 
   function shuffleList(list) {
     const arr = list.slice();
@@ -101,8 +123,10 @@
 
   function refillPromptVoiceQueue() {
     promptVoiceQueue = shuffleList(PROMPT_VOICES);
-    // 직전과 같은 파일이 맨 앞에 오면 뒤로 보냅니다.
-    if (promptVoiceQueue.length > 1 && promptVoiceQueue[0] === lastPromptVoice) {
+    if (
+      promptVoiceQueue.length > 1 &&
+      promptVoiceQueue[0].src === lastPromptVoiceSrc
+    ) {
       promptVoiceQueue.push(promptVoiceQueue.shift());
     }
   }
@@ -112,8 +136,15 @@
       refillPromptVoiceQueue();
     }
     const next = promptVoiceQueue.shift();
-    lastPromptVoice = next;
+    lastPromptVoiceSrc = next.src;
     return next;
+  }
+
+  function setPromptQuestion(text) {
+    const value = text || '';
+    if (promptQuestionEl) promptQuestionEl.textContent = value;
+    if (reviewQuestionEl) reviewQuestionEl.textContent = value;
+    if (namingQuestionEl) namingQuestionEl.textContent = value;
   }
 
   function delay(ms) {
@@ -164,12 +195,14 @@
     if (!promptAudio) return;
 
     setAudioSessionType('playback');
-    const url = pickRandomPromptVoice();
+    const prompt = pickRandomPromptVoice();
+    confirmedQuestion = prompt.question;
+    setPromptQuestion(prompt.question);
 
     // 통화 시작 클릭(사용자 제스처) 안에서 먼저 오디오를 잠금 해제합니다.
-    const ready = await unlockPromptAudio(url);
+    const ready = await unlockPromptAudio(prompt.src);
     if (!ready) {
-      console.warn('안내 음성 파일을 재생할 수 없습니다:', url);
+      console.warn('안내 음성 파일을 재생할 수 없습니다:', prompt.src);
       return;
     }
     if (deskScene.dataset.state !== 'listening') return;
@@ -189,7 +222,7 @@
 
       promptAudio.onended = finish;
       promptAudio.onerror = () => {
-        console.warn('안내 음성 재생 중 오류:', url);
+        console.warn('안내 음성 재생 중 오류:', prompt.src);
         finish();
       };
 
@@ -202,7 +235,7 @@
       const playPromise = promptAudio.play();
       if (playPromise && typeof playPromise.then === 'function') {
         playPromise.catch((err) => {
-          console.warn('안내 음성 재생 실패:', url, err);
+          console.warn('안내 음성 재생 실패:', prompt.src, err);
           finish();
         });
       }
@@ -353,6 +386,8 @@
     SpeechController.stop();
     AudioRecorder.cancel();
     recordedAudioBlob = null;
+    confirmedQuestion = '';
+    setPromptQuestion('');
     handsetEl.classList.remove('ringing');
     clearError();
     showOnly(null);
@@ -471,6 +506,7 @@
     clearError();
     setAudioSessionType('playback');
     confirmedMessage = text;
+    setPromptQuestion(confirmedQuestion);
     reviewText.textContent = `“${text}”`;
     statusText.textContent = '';
     showOnly(reviewPanel);
@@ -480,6 +516,7 @@
     deskScene.dataset.state = 'naming';
     clearError();
     statusText.textContent = '';
+    setPromptQuestion(confirmedQuestion);
     namingQuote.textContent = `“${confirmedMessage}”`;
     nameInput.value = '';
     datePreview.textContent = formatPostmarkDate(new Date());
@@ -493,7 +530,12 @@
     saveBtn.disabled = true;
 
     try {
-      await GuestbookAPI.createEntry(nameInput.value, confirmedMessage, recordedAudioBlob);
+      await GuestbookAPI.createEntry(
+        nameInput.value,
+        confirmedMessage,
+        recordedAudioBlob,
+        confirmedQuestion
+      );
       recordedAudioBlob = null;
       statusText.textContent = '';
       showOnly(savedPanel);
@@ -589,6 +631,11 @@
           <input type="checkbox" class="gallery-card-checkbox" data-id="${escapeHtml(entry.id)}" />
         </label>
         <p class="gallery-card-name">${escapeHtml(entry.name || '이름 없음')}</p>
+        ${
+          entry.question
+            ? `<p class="gallery-card-question">${escapeHtml(entry.question)}</p>`
+            : ''
+        }
         <p class="gallery-card-message">${escapeHtml(entry.message || '')}</p>
         <div class="gallery-card-footer">
           <button
