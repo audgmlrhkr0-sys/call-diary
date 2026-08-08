@@ -262,6 +262,22 @@
     }
   }
 
+  /** iOS: 이전 인식/재생 세션을 강제로 내려 다시 마이크를 잡을 수 있게 합니다. */
+  async function resetAudioSessionForCapture() {
+    stopPromptAudio();
+    setAudioSessionType('playback');
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    try {
+      if (navigator.audioSession) {
+        navigator.audioSession.type = 'auto';
+      }
+    } catch (err) {
+      // ignore
+    }
+    await new Promise((resolve) => setTimeout(resolve, SpeechController.isIOS ? 200 : 40));
+    setAudioSessionType('play-and-record');
+  }
+
   /* ------------------------------------------------------------
    * 합성 벨소리 (Web Audio API) - call.mp3 파일이 없을 때 대체 사용
    * ---------------------------------------------------------- */
@@ -559,7 +575,8 @@
     }
   }
 
-  async function goListening() {
+  async function goListening(options = {}) {
+    const skipPrompt = !!options.skipPrompt;
     deskScene.dataset.state = 'listening';
     clearError();
     handsetEl.classList.remove('ringing');
@@ -582,19 +599,30 @@
       }
     }
 
-    setLiveTranscriptStatus('… 상대방이 말하는 중 …');
-    setListeningQuestion('');
     listenConfirmBtn.disabled = true;
     progressFill.style.transition = 'none';
     progressFill.style.width = '100%';
+
+    if (skipPrompt) {
+      // 다시하기: 안내 음성을 건너뛰어 iOS 인식 성공률을 높입니다.
+      setLiveTranscriptStatus('… 답변 중 …');
+      if (confirmedQuestion) setListeningQuestion(confirmedQuestion);
+      await resetAudioSessionForCapture();
+      await new Promise((resolve) => setTimeout(resolve, SpeechController.isIOS ? 500 : 80));
+      if (deskScene.dataset.state !== 'listening') return;
+      setListeningQuestion('');
+      beginListeningSession();
+      return;
+    }
+
+    setLiveTranscriptStatus('… 상대방이 말하는 중 …');
+    setListeningQuestion('');
 
     await playRandomPromptVoice();
     if (deskScene.dataset.state !== 'listening') return;
 
     stopPromptAudio();
-    setAudioSessionType('playback');
-    await new Promise((resolve) => setTimeout(resolve, 80));
-    setAudioSessionType('play-and-record');
+    await resetAudioSessionForCapture();
     await new Promise((resolve) => setTimeout(resolve, SpeechController.isIOS ? 700 : 150));
     if (deskScene.dataset.state !== 'listening') return;
 
@@ -602,14 +630,14 @@
   }
 
   async function restartListening() {
-    SpeechController.stop();
+    await SpeechController.prepareRestart();
     stopPromptAudio();
     await AudioRecorder.cancel();
     recordedAudioBlob = null;
-    goListening();
+    await goListening({ skipPrompt: SpeechController.isIOS });
   }
 
-  async function confirmListeningEarly() {
+    async function confirmListeningEarly() {
     if (deskScene.dataset.state !== 'listening') return;
     const text = SpeechController.getTranscript();
     if (!text) return;
@@ -621,6 +649,8 @@
   // 인식 실패 시, 전화는 끊지 않고 바로 다시 "통화 시작"을 누를 수 있는 상태로
   function goRingingReadyForRetry() {
     deskScene.dataset.state = 'ringing';
+    SpeechController.stop();
+    AudioRecorder.cancel();
     setAudioSessionType('playback');
     statusText.textContent = '';
     showOnly(answerBtn);
@@ -678,13 +708,15 @@
    * 이벤트 바인딩 - 데스크/전화기 화면
    * ---------------------------------------------------------- */
   callBtn.addEventListener('click', goRinging);
-  answerBtn.addEventListener('click', goListening);
+  answerBtn.addEventListener('click', () => goListening());
   listenCancelBtn.addEventListener('click', restartListening);
   listenConfirmBtn.addEventListener('click', confirmListeningEarly);
   retryBtn.addEventListener('click', async () => {
+    // 다시하기: 세션 정리 후 안내음성 없이 바로 재인식 (아이패드 안정화)
+    await SpeechController.prepareRestart();
     await AudioRecorder.cancel();
     recordedAudioBlob = null;
-    goListening();
+    await goListening({ skipPrompt: true });
   });
   confirmBtn.addEventListener('click', goNaming);
   cancelNameBtn.addEventListener('click', goIdle);

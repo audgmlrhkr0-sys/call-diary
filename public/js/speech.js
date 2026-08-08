@@ -3,14 +3,15 @@
  * 약 15초 동안 음성을 듣고 하나의 문장으로 합쳐 반환합니다.
  *
  * 주의:
- * - iPad/iPhone Chrome(CriOS)은 WebKit 기반이라 음성 인식이 자주 실패합니다. Safari 권장.
+ * - iPad/iPhone은 데스크톱보다 불안정합니다. 특히 다시하기 직후 AudioSession이
+ *   아직 안 풀리면 인식이 침묵으로 끝나는 경우가 많습니다.
  * - iOS에서는 MediaRecorder(getUserMedia)와 동시에 쓰면 마이크가 뺏기는 경우가 많습니다.
  * - Chrome / Edge / Safari(지원 시) + 인터넷 연결이 필요합니다.
  */
 const SpeechController = (() => {
   const RECOGNITION_DURATION_MS = 15000;
   const MIC_GRANTED_KEY = 'phone-guestbook-mic-granted';
-  const RESTART_DELAY_MS = 180;
+  const RESTART_DELAY_MS = 220;
   const SpeechRecognitionImpl =
     window.SpeechRecognition || window.webkitSpeechRecognition || null;
 
@@ -33,6 +34,7 @@ const SpeechController = (() => {
   let sessionToken = 0;
   let callbacks = {};
   let micWarmStream = null;
+  let lastStoppedAt = 0;
 
   function getTranscript() {
     return `${finalTranscript} ${interimTranscript}`.trim();
@@ -75,7 +77,6 @@ const SpeechController = (() => {
       return stream;
     }
 
-    // SpeechRecognition과 마이크를 동시에 잡지 않도록 바로 해제합니다.
     stream.getTracks().forEach((track) => track.stop());
     return null;
   }
@@ -91,8 +92,15 @@ const SpeechController = (() => {
 
   function finishWithError(message) {
     active = false;
+    lastStoppedAt = Date.now();
     clearTimers();
     releaseMicWarmStream();
+    try {
+      if (recognition) recognition.abort();
+    } catch (err) {
+      // ignore
+    }
+    recognition = null;
     callbacks.onError && callbacks.onError(message);
   }
 
@@ -106,7 +114,6 @@ const SpeechController = (() => {
 
     rec.onstart = () => {
       if (token !== sessionToken) return;
-      // 인식이 마이크를 잡은 뒤 warm 스트림을 해제합니다.
       releaseMicWarmStream();
       callbacks.onStart && callbacks.onStart();
     };
@@ -129,7 +136,6 @@ const SpeechController = (() => {
 
     rec.onerror = (event) => {
       if (token !== sessionToken) return;
-      // 잠깐 무음이거나 브라우저가 세션을 끊는 경우는 무시하고, 남은 시간이 있으면 재시작합니다.
       if (event.error === 'no-speech' || event.error === 'aborted') {
         return;
       }
@@ -165,27 +171,32 @@ const SpeechController = (() => {
       if (suppressEndCallback) {
         suppressEndCallback = false;
         active = false;
+        lastStoppedAt = Date.now();
         clearTimers();
         releaseMicWarmStream();
+        recognition = null;
         return;
       }
 
       if (!active) {
+        lastStoppedAt = Date.now();
         clearTimers();
         releaseMicWarmStream();
+        recognition = null;
         callbacks.onEnd && callbacks.onEnd(getTranscript());
         return;
       }
 
       if (endingByTimer) {
         active = false;
+        lastStoppedAt = Date.now();
         clearTimers();
         releaseMicWarmStream();
+        recognition = null;
         callbacks.onEnd && callbacks.onEnd(getTranscript());
         return;
       }
 
-      // Chrome/iOS 등은 말이 잠깐 끊기면 세션을 종료합니다. 남은 시간이 있으면 재시작.
       const elapsed = Date.now() - startedAt;
       if (elapsed < RECOGNITION_DURATION_MS - 250) {
         restartTimerId = setTimeout(() => {
@@ -195,8 +206,10 @@ const SpeechController = (() => {
             recognition.start();
           } catch (err) {
             active = false;
+            lastStoppedAt = Date.now();
             clearTimers();
             releaseMicWarmStream();
+            recognition = null;
             callbacks.onEnd && callbacks.onEnd(getTranscript());
           }
         }, RESTART_DELAY_MS);
@@ -204,8 +217,10 @@ const SpeechController = (() => {
       }
 
       active = false;
+      lastStoppedAt = Date.now();
       clearTimers();
       releaseMicWarmStream();
+      recognition = null;
       callbacks.onEnd && callbacks.onEnd(getTranscript());
     };
 
@@ -231,8 +246,14 @@ const SpeechController = (() => {
       return;
     }
 
+    // 이전 세션이 막 끝났다면 iOS가 마이크를 놓을 시간을 줍니다.
     if (active) {
-      return;
+      stop();
+    }
+    const sinceStop = Date.now() - lastStoppedAt;
+    const needSettle = isIOS ? Math.max(0, 900 - sinceStop) : Math.max(0, 150 - sinceStop);
+    if (needSettle > 0) {
+      await new Promise((resolve) => setTimeout(resolve, needSettle));
     }
 
     callbacks = { onInterim, onEnd, onError, onProgress, onStart };
@@ -245,14 +266,13 @@ const SpeechController = (() => {
     const token = ++sessionToken;
 
     try {
-      // 권한만 확인한 뒤 마이크는 바로 놓습니다.
-      // (iOS에서 getUserMedia를 잡은 채 SpeechRecognition을 켜면 인식이 자주 실패합니다.)
       await ensureMicrophoneAccess({ keepAlive: false });
       if (isIOS) {
-        await new Promise((resolve) => setTimeout(resolve, 350));
+        await new Promise((resolve) => setTimeout(resolve, 280));
       }
     } catch (err) {
       active = false;
+      lastStoppedAt = Date.now();
       releaseMicWarmStream();
       const denied =
         err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError');
@@ -274,15 +294,27 @@ const SpeechController = (() => {
       recognition = createRecognition(token);
       recognition.start();
     } catch (err) {
-      active = false;
-      releaseMicWarmStream();
-      onError &&
-        onError(
-          isIOSChrome
-            ? '음성 인식을 시작할 수 없습니다. 아이패드에서는 Safari로 열어주세요.'
-            : '음성 인식을 시작할 수 없습니다.'
-        );
-      return;
+      // InvalidStateError: 아직 이전 인식이 안 끝난 경우 → 잠시 후 한 번 더
+      if (isIOS) {
+        await new Promise((resolve) => setTimeout(resolve, 700));
+        if (!active || token !== sessionToken) return;
+        try {
+          recognition = createRecognition(token);
+          recognition.start();
+        } catch (err2) {
+          active = false;
+          lastStoppedAt = Date.now();
+          releaseMicWarmStream();
+          onError && onError('음성 인식을 다시 시작할 수 없습니다. 잠시 후 다시 눌러주세요.');
+          return;
+        }
+      } else {
+        active = false;
+        lastStoppedAt = Date.now();
+        releaseMicWarmStream();
+        onError && onError('음성 인식을 시작할 수 없습니다.');
+        return;
+      }
     }
 
     if (onProgress) {
@@ -305,34 +337,49 @@ const SpeechController = (() => {
           recognition.stop();
         } catch (err) {
           active = false;
+          lastStoppedAt = Date.now();
           releaseMicWarmStream();
+          recognition = null;
           onEnd && onEnd(getTranscript());
         }
       }
     }, RECOGNITION_DURATION_MS);
   }
 
-  function stop(options = {}) {
+  function stop() {
     clearTimers();
     endingByTimer = true;
-    // stop()은 수동 중단용이라 onEnd를 다시 부르지 않습니다.
     suppressEndCallback = true;
     sessionToken += 1;
     const wasActive = active;
     active = false;
+    lastStoppedAt = Date.now();
     releaseMicWarmStream();
     if (recognition && wasActive) {
       try {
-        recognition.stop();
+        recognition.abort();
       } catch (err) {
-        // already stopped
+        try {
+          recognition.stop();
+        } catch (err2) {
+          // already stopped
+        }
       }
     }
+    recognition = null;
+  }
+
+  /** 다시하기 전에 호출: 세션을 끊고 iOS가 마이크를 놓을 때까지 기다립니다. */
+  async function prepareRestart() {
+    stop();
+    releaseMicWarmStream();
+    await new Promise((resolve) => setTimeout(resolve, isIOS ? 850 : 120));
   }
 
   return {
     start,
     stop,
+    prepareRestart,
     getTranscript,
     ensureMicrophoneAccess,
     releaseMicWarmStream,
