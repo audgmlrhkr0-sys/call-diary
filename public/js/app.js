@@ -526,28 +526,33 @@
 
     recordedAudioBlob = null;
     let recorderStarted = false;
-    // iOS: concurrent MediaRecorder steals the mic from SpeechRecognition.
-    const allowRecorder = !SpeechController.isIOS;
 
     const startRecorderAfterSpeech = async () => {
-      if (!allowRecorder || recorderStarted || deskScene.dataset.state !== 'listening') return;
+      if (recorderStarted || deskScene.dataset.state !== 'listening') return;
       recorderStarted = true;
       try {
         await AudioRecorder.start();
       } catch (err) {
+        recorderStarted = false;
         console.warn('음성 녹음을 시작하지 못했습니다.', err);
       }
     };
 
     SpeechController.start({
       onStart: () => {
+        // 인식이 마이크를 잡은 뒤 녹음 시작 (아이패드는 조금 더 늦게)
+        const delayMs = SpeechController.isIOS ? 700 : 100;
         setTimeout(() => {
           startRecorderAfterSpeech();
-        }, 120);
+        }, delayMs);
       },
       onInterim: (text) => {
         setLiveTranscriptStatus(text || '… 답변 중 …');
         listenConfirmBtn.disabled = !text;
+        // 인식이 실제로 글자를 내기 시작했다면 녹음도 보장
+        if (text && !recorderStarted) {
+          startRecorderAfterSpeech();
+        }
       },
       onEnd: async (finalText) => {
         if (deskScene.dataset.state !== 'listening') return;
@@ -568,11 +573,10 @@
       },
     });
 
-    if (allowRecorder) {
-      setTimeout(() => {
-        startRecorderAfterSpeech();
-      }, 400);
-    }
+    // onStart가 없는 브라우저용 폴백
+    setTimeout(() => {
+      startRecorderAfterSpeech();
+    }, SpeechController.isIOS ? 1500 : 400);
   }
 
   async function goListening(options = {}) {
