@@ -86,11 +86,20 @@
   ];
 
   function promptVoiceUrl(filename) {
-    const encoded = encodeURIComponent(filename);
+    // file:// 에서는 한글 파일명을 그대로, http 에서는 인코딩해서 요청합니다.
     if (window.location.protocol === 'file:') {
-      return `../${encoded}`;
+      return `../${filename}`;
     }
-    return `/${encoded}`;
+    return `/${encodeURIComponent(filename)}`;
+  }
+
+  function delay(ms) {
+    return new Promise((resolve) => {
+      promptDelayTimerId = setTimeout(() => {
+        promptDelayTimerId = null;
+        resolve();
+      }, ms);
+    });
   }
 
   function stopPromptAudio() {
@@ -100,6 +109,7 @@
     promptAudio.onended = null;
     promptAudio.onerror = null;
     promptAudio.pause();
+    promptAudio.muted = false;
     promptAudio.removeAttribute('src');
     promptAudio.load();
   }
@@ -109,35 +119,73 @@
     return PROMPT_VOICES[index];
   }
 
-  function playRandomPromptVoice() {
-    return new Promise((resolve) => {
-      if (!promptAudio) {
+  async function unlockPromptAudio(url) {
+    if (!promptAudio) return false;
+
+    promptAudio.muted = true;
+    promptAudio.src = url;
+
+    try {
+      // await 없이 바로 play() 해야 사용자 제스처가 유지됩니다.
+      const playPromise = promptAudio.play();
+      if (playPromise && typeof playPromise.then === 'function') {
+        await playPromise;
+      }
+      promptAudio.pause();
+      promptAudio.currentTime = 0;
+      promptAudio.muted = false;
+      return true;
+    } catch (err) {
+      console.warn('안내 음성을 준비하지 못했습니다.', url, err);
+      promptAudio.muted = false;
+      return false;
+    }
+  }
+
+  async function playRandomPromptVoice() {
+    if (!promptAudio) return;
+
+    setAudioSessionType('playback');
+    const filename = pickRandomPromptVoice();
+    const url = promptVoiceUrl(filename);
+
+    // 통화 시작 클릭(사용자 제스처) 안에서 먼저 오디오를 잠금 해제합니다.
+    const ready = await unlockPromptAudio(url);
+    if (!ready) return;
+    if (deskScene.dataset.state !== 'listening') return;
+
+    await delay(1000);
+    if (deskScene.dataset.state !== 'listening') return;
+
+    await new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        promptAudio.onended = null;
+        promptAudio.onerror = null;
         resolve();
-        return;
+      };
+
+      promptAudio.onended = finish;
+      promptAudio.onerror = () => {
+        console.warn('안내 음성 재생 중 오류:', filename);
+        finish();
+      };
+
+      try {
+        promptAudio.currentTime = 0;
+      } catch (err) {
+        // ignore
       }
 
-      setAudioSessionType('playback');
-      clearTimeout(promptDelayTimerId);
-
-      promptDelayTimerId = setTimeout(() => {
-        promptDelayTimerId = null;
-        const filename = pickRandomPromptVoice();
-        const finish = () => {
-          promptAudio.onended = null;
-          promptAudio.onerror = null;
-          resolve();
-        };
-
-        promptAudio.onended = finish;
-        promptAudio.onerror = finish;
-        promptAudio.src = promptVoiceUrl(filename);
-        promptAudio.currentTime = 0;
-
-        const playPromise = promptAudio.play();
-        if (playPromise && typeof playPromise.then === 'function') {
-          playPromise.catch(() => finish());
-        }
-      }, 1000);
+      const playPromise = promptAudio.play();
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise.catch((err) => {
+          console.warn('안내 음성 재생 실패:', filename, err);
+          finish();
+        });
+      }
     });
   }
 

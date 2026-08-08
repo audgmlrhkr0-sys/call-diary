@@ -646,19 +646,33 @@ body {
 }
 
 .gallery-delete-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   font-weight: 700;
-  background: #111111;
-  color: #ffe14a;
-  border-radius: 12px;
-  padding: 14px 20px;
+  background: #ffe14a;
+  color: #111111;
+  border: none;
+  border-radius: 10px;
+  padding: 0;
   font-size: 1rem;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.gallery-delete-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
 }
 
 .gallery-delete-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
   transform: none;
+  filter: none;
 }
 
 .gallery-list {
