@@ -85,8 +85,35 @@
     'assets/sounds/prompts/jisu2.m4a',
   ];
 
-  function promptVoiceUrl(path) {
-    return path;
+  let promptVoiceQueue = [];
+  let lastPromptVoice = '';
+
+  function shuffleList(list) {
+    const arr = list.slice();
+    for (let i = arr.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+    }
+    return arr;
+  }
+
+  function refillPromptVoiceQueue() {
+    promptVoiceQueue = shuffleList(PROMPT_VOICES);
+    // 직전과 같은 파일이 맨 앞에 오면 뒤로 보냅니다.
+    if (promptVoiceQueue.length > 1 && promptVoiceQueue[0] === lastPromptVoice) {
+      promptVoiceQueue.push(promptVoiceQueue.shift());
+    }
+  }
+
+  function pickRandomPromptVoice() {
+    if (!promptVoiceQueue.length) {
+      refillPromptVoiceQueue();
+    }
+    const next = promptVoiceQueue.shift();
+    lastPromptVoice = next;
+    return next;
   }
 
   function delay(ms) {
@@ -108,11 +135,6 @@
     promptAudio.muted = false;
     promptAudio.removeAttribute('src');
     promptAudio.load();
-  }
-
-  function pickRandomPromptVoice() {
-    const index = Math.floor(Math.random() * PROMPT_VOICES.length);
-    return PROMPT_VOICES[index];
   }
 
   async function unlockPromptAudio(url) {
@@ -354,7 +376,7 @@
   }
 
   async function beginListeningSession() {
-    liveTranscript.textContent = '… 듣고 있어요 …';
+    liveTranscript.textContent = '… 답변 중 …';
     listenConfirmBtn.disabled = true;
     progressFill.style.transition = 'none';
     progressFill.style.width = '100%';
@@ -374,7 +396,7 @@
 
     SpeechController.start({
       onInterim: (text) => {
-        liveTranscript.textContent = text || '… 듣고 있어요 …';
+        liveTranscript.textContent = text || '… 답변 중 …';
         listenConfirmBtn.disabled = !text;
       },
       onEnd: async (finalText) => {
@@ -407,7 +429,7 @@
     setAudioSessionType('playback');
     showOnly(listeningPanel);
 
-    liveTranscript.textContent = '… 연결 중 …';
+    liveTranscript.textContent = '… 상대방이 말하는 중 …';
     listenConfirmBtn.disabled = true;
     progressFill.style.transition = 'none';
     progressFill.style.width = '100%';
