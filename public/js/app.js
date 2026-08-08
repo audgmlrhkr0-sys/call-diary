@@ -49,6 +49,7 @@
   const listeningPanel = document.getElementById('listening-panel');
   const progressFill = document.getElementById('progress-fill');
   const liveTranscript = document.getElementById('live-transcript');
+  const liveTranscriptStatus = document.getElementById('live-transcript-status');
   const promptQuestionEl = document.getElementById('prompt-question');
   const listenCancelBtn = document.getElementById('listen-cancel-btn');
   const listenConfirmBtn = document.getElementById('listen-confirm-btn');
@@ -139,9 +140,22 @@
     return next;
   }
 
+  function setLiveTranscriptStatus(text) {
+    if (liveTranscriptStatus) {
+      liveTranscriptStatus.textContent = text || '';
+    } else if (liveTranscript) {
+      liveTranscript.textContent = text || '';
+    }
+  }
+
+  function setListeningQuestion(text) {
+    if (!promptQuestionEl) return;
+    const value = (text || '').trim();
+    promptQuestionEl.textContent = value ? `“${value}”` : '';
+  }
+
   function setPromptQuestion(text) {
     const value = text || '';
-    if (promptQuestionEl) promptQuestionEl.textContent = value;
     if (reviewQuestionEl) reviewQuestionEl.textContent = value;
   }
 
@@ -157,6 +171,7 @@
   function stopPromptAudio() {
     clearTimeout(promptDelayTimerId);
     promptDelayTimerId = null;
+    setListeningQuestion('');
     if (!promptAudio) return;
     promptAudio.onended = null;
     promptAudio.onerror = null;
@@ -213,6 +228,7 @@
       const finish = () => {
         if (settled) return;
         settled = true;
+        setListeningQuestion('');
         promptAudio.onended = null;
         promptAudio.onerror = null;
         resolve();
@@ -230,6 +246,7 @@
         // ignore
       }
 
+      setListeningQuestion(prompt.question);
       const playPromise = promptAudio.play();
       if (playPromise && typeof playPromise.then === 'function') {
         playPromise.catch((err) => {
@@ -386,6 +403,7 @@
     recordedAudioBlob = null;
     confirmedQuestion = '';
     setPromptQuestion('');
+    setListeningQuestion('');
     handsetEl.classList.remove('ringing');
     clearError();
     showOnly(null);
@@ -409,7 +427,8 @@
   }
 
   async function beginListeningSession() {
-    liveTranscript.textContent = '… 답변 중 …';
+    setLiveTranscriptStatus('… 답변 중 …');
+    setListeningQuestion('');
     listenConfirmBtn.disabled = true;
     progressFill.style.transition = 'none';
     progressFill.style.width = '100%';
@@ -429,7 +448,7 @@
 
     SpeechController.start({
       onInterim: (text) => {
-        liveTranscript.textContent = text || '… 답변 중 …';
+        setLiveTranscriptStatus(text || '… 답변 중 …');
         listenConfirmBtn.disabled = !text;
       },
       onEnd: async (finalText) => {
@@ -462,7 +481,8 @@
     setAudioSessionType('playback');
     showOnly(listeningPanel);
 
-    liveTranscript.textContent = '… 상대방이 말하는 중 …';
+    setLiveTranscriptStatus('… 상대방이 말하는 중 …');
+    setListeningQuestion('');
     listenConfirmBtn.disabled = true;
     progressFill.style.transition = 'none';
     progressFill.style.width = '100%';

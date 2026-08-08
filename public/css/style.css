@@ -488,18 +488,13 @@ body {
   font-weight: 400;
   line-height: 1.45;
   color: rgba(43, 33, 56, 0.38);
-  margin: 8px 0 4px;
+  margin: 0 0 10px;
   word-break: keep-all;
   text-align: center;
 }
 
 .prompt-question:empty {
   display: none;
-}
-
-.listening-panel .prompt-question {
-  margin-top: 10px;
-  margin-bottom: 0;
 }
 
 /* ---------------- 듣는 중 패널 ---------------- */
@@ -530,6 +525,27 @@ body {
   border-radius: 8px;
   padding: 12px 16px;
   margin: 0 0 4px;
+  text-align: center;
+}
+
+.live-transcript-status {
+  margin: 0;
+  font: inherit;
+  color: inherit;
+}
+
+.prompt-question-inline {
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: rgba(43, 33, 56, 0.38);
+  margin: 8px 0 0;
+  word-break: keep-all;
+}
+
+.prompt-question-inline:empty {
+  display: none;
 }
 
 /* ---------------- 리뷰 패널 ---------------- */
