@@ -99,6 +99,25 @@ GitHub Pages는 정적 파일만 제공하고 `server.js`를 실행해주지 않
 자동으로 서빙하고, `public/index.html`도 상대경로(`../전화기.png`, `../call.mp3`)로
 같은 위치를 가리키고 있어서 별도 설정 없이 바로 반영됩니다.
 
+## Supabase 연동 (음성 저장 / 방명록 공유)
+
+1. Supabase 프로젝트를 만들고, `supabase/setup.sql`을 SQL Editor에서 실행합니다.
+2. `public/js/config.js`에 프로젝트 URL과 anon key를 넣습니다.
+
+```js
+window.GuestbookConfig = {
+  SUPABASE_URL: 'https://xxxx.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOi...',
+  ADMIN_PASSWORD: '7978',
+  AUDIO_BUCKET: 'guestbook-audio',
+};
+```
+
+3. 설정이 있으면 앱이 Supabase에 글+음성을 저장합니다.
+   비어 있으면 로컬 서버(`data/entries.json`, `data/audio/`)로 동작합니다.
+
+관리자 삭제 비밀번호는 `7978`입니다. (방명록에서 항목 선택 → 선택 삭제)
+
 `public/assets/images/`
 
 | 파일명 | 용도 | 권장 크기 |

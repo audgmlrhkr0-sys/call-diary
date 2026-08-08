@@ -31,6 +31,13 @@
   const galleryToggleBtn = document.getElementById('gallery-toggle-btn');
   const backBtn = document.getElementById('back-btn');
   const galleryList = document.getElementById('gallery-list');
+  const galleryDeleteBtn = document.getElementById('gallery-delete-btn');
+  const adminModal = document.getElementById('admin-modal');
+  const adminPasswordInput = document.getElementById('admin-password-input');
+  const adminModalError = document.getElementById('admin-modal-error');
+  const adminCancelBtn = document.getElementById('admin-cancel-btn');
+  const adminConfirmBtn = document.getElementById('admin-confirm-btn');
+  const entryAudio = document.getElementById('entry-audio');
 
   const handsetEl = document.getElementById('handset');
   const statusText = document.getElementById('status-text');
@@ -42,6 +49,8 @@
   const listeningPanel = document.getElementById('listening-panel');
   const progressFill = document.getElementById('progress-fill');
   const liveTranscript = document.getElementById('live-transcript');
+  const listenCancelBtn = document.getElementById('listen-cancel-btn');
+  const listenConfirmBtn = document.getElementById('listen-confirm-btn');
 
   const reviewPanel = document.getElementById('review-panel');
   const reviewText = document.getElementById('review-text');
@@ -59,7 +68,11 @@
   const ringAudio = document.getElementById('ring-audio');
 
   let confirmedMessage = '';
+  let recordedAudioBlob = null;
   let savedResetTimerId = null;
+  let selectedEntryIds = new Set();
+  let pendingDeleteIds = [];
+  let playingEntryId = null;
 
   /* ------------------------------------------------------------
    * iOS/iPadOS 오디오 세션 제어 (Safari 17+ AudioSession API)
@@ -202,6 +215,8 @@
     setAudioSessionType('playback');
     stopRing();
     SpeechController.stop();
+    AudioRecorder.cancel();
+    recordedAudioBlob = null;
     handsetEl.classList.remove('ringing');
     clearError();
     showOnly(null);
@@ -224,43 +239,75 @@
     }
   }
 
-  function goListening() {
-    deskScene.dataset.state = 'listening';
-    clearError();
-    handsetEl.classList.remove('ringing');
-    stopRing();
-    statusText.textContent = '';
-    setAudioSessionType('play-and-record'); // 음성 인식은 마이크로만 캡처되도록
-    showOnly(listeningPanel);
-
+  async function beginListeningSession() {
     liveTranscript.textContent = '… 듣고 있어요 …';
+    listenConfirmBtn.disabled = true;
     progressFill.style.transition = 'none';
     progressFill.style.width = '100%';
-    // 강제 리플로우 후 트랜지션 재적용 (10초 동안 줄어드는 바)
     void progressFill.offsetWidth;
     progressFill.style.transition = `width ${SpeechController.durationMs / 1000}s linear`;
     requestAnimationFrame(() => {
       progressFill.style.width = '0%';
     });
 
+    recordedAudioBlob = null;
+    try {
+      await AudioRecorder.start();
+    } catch (err) {
+      // 녹음 실패해도 음성 인식은 시도합니다.
+      console.warn('음성 녹음을 시작하지 못했습니다.', err);
+    }
+
     SpeechController.start({
       onInterim: (text) => {
         liveTranscript.textContent = text || '… 듣고 있어요 …';
+        listenConfirmBtn.disabled = !text;
       },
-      onEnd: (finalText) => {
+      onEnd: async (finalText) => {
         if (deskScene.dataset.state !== 'listening') return;
+        recordedAudioBlob = await AudioRecorder.stop();
         if (!finalText) {
+          recordedAudioBlob = null;
           goRingingReadyForRetry();
           return;
         }
         goReviewing(finalText);
       },
-      onError: (message) => {
+      onError: async (message) => {
         if (deskScene.dataset.state !== 'listening') return;
+        await AudioRecorder.cancel();
+        recordedAudioBlob = null;
         if (message) showError(message);
         goRingingReadyForRetry();
       },
     });
+  }
+
+  function goListening() {
+    deskScene.dataset.state = 'listening';
+    clearError();
+    handsetEl.classList.remove('ringing');
+    stopRing();
+    statusText.textContent = '';
+    setAudioSessionType('play-and-record');
+    showOnly(listeningPanel);
+    beginListeningSession();
+  }
+
+  async function restartListening() {
+    SpeechController.stop();
+    await AudioRecorder.cancel();
+    recordedAudioBlob = null;
+    goListening();
+  }
+
+  async function confirmListeningEarly() {
+    if (deskScene.dataset.state !== 'listening') return;
+    const text = SpeechController.getTranscript();
+    if (!text) return;
+    SpeechController.stop();
+    recordedAudioBlob = await AudioRecorder.stop();
+    goReviewing(text);
   }
 
   // 인식 실패 시, 전화는 끊지 않고 바로 다시 "통화 시작"을 누를 수 있는 상태로
@@ -298,9 +345,11 @@
     saveBtn.disabled = true;
 
     try {
-      await GuestbookAPI.createEntry(nameInput.value, confirmedMessage);
+      await GuestbookAPI.createEntry(nameInput.value, confirmedMessage, recordedAudioBlob);
+      recordedAudioBlob = null;
       statusText.textContent = '';
       showOnly(savedPanel);
+      galleryToggleBtn.classList.add('nudge');
       savedResetTimerId = setTimeout(goIdle, 3200);
     } catch (err) {
       showError(err.message || '저장에 실패했습니다. 다시 시도해주세요.');
@@ -316,7 +365,13 @@
    * ---------------------------------------------------------- */
   callBtn.addEventListener('click', goRinging);
   answerBtn.addEventListener('click', goListening);
-  retryBtn.addEventListener('click', goListening);
+  listenCancelBtn.addEventListener('click', restartListening);
+  listenConfirmBtn.addEventListener('click', confirmListeningEarly);
+  retryBtn.addEventListener('click', async () => {
+    await AudioRecorder.cancel();
+    recordedAudioBlob = null;
+    goListening();
+  });
   confirmBtn.addEventListener('click', goNaming);
   cancelNameBtn.addEventListener('click', goIdle);
   saveBtn.addEventListener('click', goSaved);
@@ -327,8 +382,49 @@
   /* ------------------------------------------------------------
    * 방명록 갤러리
    * ---------------------------------------------------------- */
+  function updateDeleteButtonState() {
+    galleryDeleteBtn.disabled = selectedEntryIds.size === 0;
+  }
+
+  function stopEntryAudio() {
+    if (!entryAudio) return;
+    entryAudio.pause();
+    entryAudio.removeAttribute('src');
+    entryAudio.load();
+    playingEntryId = null;
+    galleryList.querySelectorAll('.gallery-play-btn.is-playing').forEach((btn) => {
+      btn.classList.remove('is-playing');
+      btn.textContent = '▶';
+    });
+  }
+
+  function togglePlayEntry(entry, button) {
+    if (!entry.audioUrl) return;
+
+    if (playingEntryId === entry.id && !entryAudio.paused) {
+      stopEntryAudio();
+      return;
+    }
+
+    stopEntryAudio();
+    playingEntryId = entry.id;
+    entryAudio.src = entry.audioUrl;
+    button.classList.add('is-playing');
+    button.textContent = '■';
+    const playPromise = entryAudio.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {
+        stopEntryAudio();
+      });
+    }
+  }
+
   function renderGalleryCards(entries) {
     galleryList.innerHTML = '';
+    selectedEntryIds = new Set();
+    updateDeleteButtonState();
+    stopEntryAudio();
+
     if (!entries.length) {
       return;
     }
@@ -338,11 +434,42 @@
       card.className = 'gallery-card';
       const tilt = (index % 2 === 0 ? -1 : 1) * (0.6 + (index % 3) * 0.4);
       card.style.setProperty('--tilt', `${tilt}deg`);
+
+      const hasAudio = !!(entry.audioUrl);
       card.innerHTML = `
+        <label class="gallery-card-select">
+          <input type="checkbox" class="gallery-card-checkbox" data-id="${escapeHtml(entry.id)}" />
+        </label>
         <p class="gallery-card-name">${escapeHtml(entry.name || '이름 없음')}</p>
         <p class="gallery-card-message">${escapeHtml(entry.message || '')}</p>
-        <p class="gallery-card-date">${escapeHtml(entry.date || '')}</p>
+        <div class="gallery-card-footer">
+          <button
+            class="gallery-play-btn${!hasAudio ? ' is-disabled' : ''}"
+            type="button"
+            data-id="${escapeHtml(entry.id)}"
+            ${hasAudio ? '' : 'disabled'}
+            aria-label="음성 재생"
+          >▶</button>
+          <p class="gallery-card-date">${escapeHtml(entry.date || '')}</p>
+        </div>
       `;
+
+      const checkbox = card.querySelector('.gallery-card-checkbox');
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) selectedEntryIds.add(entry.id);
+        else selectedEntryIds.delete(entry.id);
+        card.classList.toggle('is-selected', checkbox.checked);
+        updateDeleteButtonState();
+      });
+
+      const playBtn = card.querySelector('.gallery-play-btn');
+      if (hasAudio) {
+        playBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          togglePlayEntry(entry, playBtn);
+        });
+      }
+
       galleryList.appendChild(card);
     });
   }
@@ -351,6 +478,7 @@
     deskScene.classList.add('hidden');
     galleryScene.classList.remove('hidden');
     galleryToggleBtn.classList.add('hidden');
+    galleryToggleBtn.classList.remove('nudge');
     galleryList.innerHTML = '';
     try {
       const entries = await GuestbookAPI.fetchEntries();
@@ -361,13 +489,109 @@
   }
 
   function closeGallery() {
+    stopEntryAudio();
+    selectedEntryIds = new Set();
+    updateDeleteButtonState();
+    closeAdminModal();
     galleryScene.classList.add('hidden');
     deskScene.classList.remove('hidden');
     galleryToggleBtn.classList.remove('hidden');
   }
 
+  function openAdminModal(ids) {
+    pendingDeleteIds = ids.slice();
+    adminPasswordInput.value = '';
+    adminModalError.classList.add('hidden');
+    adminModalError.textContent = '';
+    adminModal.classList.remove('hidden');
+    setTimeout(() => adminPasswordInput.focus(), 30);
+  }
+
+  function closeAdminModal() {
+    adminModal.classList.add('hidden');
+    pendingDeleteIds = [];
+    adminPasswordInput.value = '';
+    adminModalError.classList.add('hidden');
+  }
+
+  async function confirmAdminDelete() {
+    adminConfirmBtn.disabled = true;
+    try {
+      await GuestbookAPI.deleteEntries(pendingDeleteIds, adminPasswordInput.value);
+      closeAdminModal();
+      const entries = await GuestbookAPI.fetchEntries();
+      renderGalleryCards(entries);
+    } catch (err) {
+      adminModalError.textContent = err.message || '삭제에 실패했습니다.';
+      adminModalError.classList.remove('hidden');
+    } finally {
+      adminConfirmBtn.disabled = false;
+    }
+  }
+
   galleryToggleBtn.addEventListener('click', openGallery);
   backBtn.addEventListener('click', closeGallery);
+  galleryDeleteBtn.addEventListener('click', () => {
+    if (!selectedEntryIds.size) return;
+    openAdminModal(Array.from(selectedEntryIds));
+  });
+  adminCancelBtn.addEventListener('click', closeAdminModal);
+  adminConfirmBtn.addEventListener('click', confirmAdminDelete);
+  adminPasswordInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') confirmAdminDelete();
+  });
+  adminModal.addEventListener('click', (e) => {
+    if (e.target === adminModal) closeAdminModal();
+  });
+  if (entryAudio) {
+    entryAudio.addEventListener('ended', stopEntryAudio);
+  }
+
+  /* ------------------------------------------------------------
+   * 전체화면
+   * ---------------------------------------------------------- */
+  const fullscreenBtn = document.getElementById('fullscreen-btn');
+  const fullscreenEnterIcon = fullscreenBtn.querySelector('.fullscreen-icon-enter');
+  const fullscreenExitIcon = fullscreenBtn.querySelector('.fullscreen-icon-exit');
+
+  function isFullscreen() {
+    return !!(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.msFullscreenElement
+    );
+  }
+
+  function updateFullscreenIcon() {
+    const on = isFullscreen();
+    fullscreenEnterIcon.classList.toggle('hidden', on);
+    fullscreenExitIcon.classList.toggle('hidden', !on);
+    fullscreenBtn.setAttribute('aria-label', on ? '전체화면 종료' : '전체화면');
+    fullscreenBtn.setAttribute('title', on ? '전체화면 종료' : '전체화면');
+  }
+
+  async function toggleFullscreen() {
+    try {
+      if (isFullscreen()) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else if (document.msExitFullscreen) document.msExitFullscreen();
+      } else {
+        const el = document.documentElement;
+        if (el.requestFullscreen) await el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        else if (el.msRequestFullscreen) el.msRequestFullscreen();
+      }
+    } catch (err) {
+      // 브라우저/기기에서 전체화면을 막은 경우는 조용히 무시
+    }
+    updateFullscreenIcon();
+  }
+
+  fullscreenBtn.addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', updateFullscreenIcon);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+  updateFullscreenIcon();
 
   /* ------------------------------------------------------------
    * 초기화

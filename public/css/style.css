@@ -97,6 +97,58 @@ body {
   box-shadow: none;
 }
 
+.ornate-btn.nudge {
+  animation: gallery-nudge 1.1s ease-in-out infinite;
+}
+
+@keyframes gallery-nudge {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 225, 74, 0.55);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 0 0 10px rgba(255, 225, 74, 0);
+  }
+}
+
+/* ---------------- 전체화면 버튼 ---------------- */
+.fullscreen-btn {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 60;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: #000000;
+  color: #ffe14a;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+.fullscreen-btn:hover {
+  opacity: 1;
+  background: #1a1a1a;
+  transform: translateY(-1px);
+}
+
+.fullscreen-btn:active {
+  transform: translateY(1px);
+}
+
+.fullscreen-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
 /* ---------------- 공통 장면(scene) ---------------- */
 .scene {
   position: fixed;
@@ -355,6 +407,38 @@ body {
   transform: translateY(1px);
 }
 
+.confirm-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+.listen-cancel-btn {
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  font-weight: 700;
+  background: #000000;
+  color: #ffe14a;
+  box-shadow: none;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  padding: 14px 22px;
+  border-radius: 12px;
+}
+
+.listen-cancel-btn:hover {
+  transform: translateY(-2px);
+  background: #1a1a1a;
+}
+
+.listen-cancel-btn:active {
+  transform: translateY(1px);
+}
+
+.listening-actions {
+  margin-top: 16px;
+}
+
 .ghost-btn {
   background: transparent;
   color: var(--color-ink-soft);
@@ -555,6 +639,28 @@ body {
   padding-bottom: 0;
 }
 
+.gallery-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gallery-delete-btn {
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  font-weight: 700;
+  background: #111111;
+  color: #ffe14a;
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-size: 1rem;
+}
+
+.gallery-delete-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .gallery-list {
   overflow-y: auto;
   display: grid;
@@ -576,6 +682,11 @@ body {
   font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
 }
 
+.gallery-card.is-selected {
+  outline: 3px solid #ffe14a;
+  outline-offset: 2px;
+}
+
 .gallery-card::before {
   content: "";
   position: absolute;
@@ -588,12 +699,27 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
 }
 
+.gallery-card-select {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+}
+
+.gallery-card-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #111111;
+  cursor: pointer;
+}
+
 .gallery-card-name {
   font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   font-weight: 700;
   font-size: 1.05rem;
   color: #111111;
   margin: 0 0 10px;
+  padding-left: 22px;
 }
 
 .gallery-card-message {
@@ -606,6 +732,36 @@ body {
   min-height: 3em;
 }
 
+.gallery-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.gallery-play-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #111111;
+  color: #ffe14a;
+  font-size: 0.85rem;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.gallery-play-btn.is-playing {
+  background: #ffe14a;
+  color: #111111;
+}
+
+.gallery-play-btn.is-disabled,
+.gallery-play-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
 .gallery-card-date {
   font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   font-size: 0.72rem;
@@ -613,6 +769,54 @@ body {
   color: #555555;
   text-align: right;
   margin: 0;
+}
+
+/* ---------------- 관리자 모달 ---------------- */
+.admin-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 20px;
+}
+
+.admin-modal-card {
+  width: min(360px, 92vw);
+  background: #fffdf5;
+  border: 2px solid #111111;
+  border-radius: 16px;
+  padding: 28px 24px 22px;
+  text-align: center;
+}
+
+.admin-modal-title {
+  margin: 0 0 16px;
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #111111;
+}
+
+.admin-password-input {
+  width: 100%;
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  font-size: 1.1rem;
+  text-align: center;
+  padding: 12px 14px;
+  border: 2px solid #111111;
+  border-radius: 10px;
+  background: #ffffff;
+  outline: none;
+}
+
+.admin-modal-error {
+  margin: 12px 0 0;
+  color: #b00020;
+  font-size: 0.85rem;
+  font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
 }
 
 /* ---------------- 스크롤바 ---------------- */

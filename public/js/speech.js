@@ -1,12 +1,12 @@
 /**
  * Web Speech API(webkitSpeechRecognition)를 감싼 컨트롤러.
- * 약 10초 동안 음성을 듣고 하나의 문장으로 합쳐 반환합니다.
+ * 약 15초 동안 음성을 듣고 하나의 문장으로 합쳐 반환합니다.
  * Chrome / Edge / Safari(지원 시) + 인터넷 연결이 필요합니다.
  * 마이크 권한은 getUserMedia로 먼저 받아 두면, 같은 주소(localhost 등)에서는
  * 새로고침 후에도 브라우저가 다시 묻지 않습니다.
  */
 const SpeechController = (() => {
-  const RECOGNITION_DURATION_MS = 10000;
+  const RECOGNITION_DURATION_MS = 15000;
   const MIC_GRANTED_KEY = 'phone-guestbook-mic-granted';
   const SpeechRecognitionImpl =
     window.SpeechRecognition || window.webkitSpeechRecognition || null;
@@ -15,10 +15,17 @@ const SpeechController = (() => {
   let stopTimerId = null;
   let progressRafId = null;
   let finalTranscript = '';
+  let interimTranscript = '';
   let active = false;
   let endingByTimer = false;
+  let suppressEndCallback = false;
   let startedAt = 0;
+  let sessionToken = 0;
   let callbacks = {};
+
+  function getTranscript() {
+    return `${finalTranscript} ${interimTranscript}`.trim();
+  }
 
   function isSecureEnough() {
     if (window.isSecureContext) return true;
@@ -48,7 +55,7 @@ const SpeechController = (() => {
     }
   }
 
-  function createRecognition() {
+  function createRecognition(token) {
     const rec = new SpeechRecognitionImpl();
     rec.lang = 'ko-KR';
     rec.continuous = true;
@@ -56,6 +63,7 @@ const SpeechController = (() => {
     rec.maxAlternatives = 1;
 
     rec.onresult = (event) => {
+      if (token !== sessionToken) return;
       let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
         const piece = event.results[i][0].transcript;
@@ -65,11 +73,13 @@ const SpeechController = (() => {
           interim += piece;
         }
       }
-      const combined = `${finalTranscript} ${interim}`.trim();
+      interimTranscript = interim;
+      const combined = getTranscript();
       callbacks.onInterim && callbacks.onInterim(combined);
     };
 
     rec.onerror = (event) => {
+      if (token !== sessionToken) return;
       // 잠깐 무음이거나 브라우저가 세션을 끊는 경우는 무시하고, 남은 시간이 있으면 재시작합니다.
       if (event.error === 'no-speech' || event.error === 'aborted') {
         return;
@@ -105,10 +115,20 @@ const SpeechController = (() => {
     };
 
     rec.onend = () => {
+      if (token !== sessionToken) return;
+
+      if (suppressEndCallback) {
+        suppressEndCallback = false;
+        active = false;
+        clearTimeout(stopTimerId);
+        cancelAnimationFrame(progressRafId);
+        return;
+      }
+
       if (!active) {
         clearTimeout(stopTimerId);
         cancelAnimationFrame(progressRafId);
-        callbacks.onEnd && callbacks.onEnd(finalTranscript.trim());
+        callbacks.onEnd && callbacks.onEnd(getTranscript());
         return;
       }
 
@@ -117,7 +137,7 @@ const SpeechController = (() => {
         active = false;
         clearTimeout(stopTimerId);
         cancelAnimationFrame(progressRafId);
-        callbacks.onEnd && callbacks.onEnd(finalTranscript.trim());
+        callbacks.onEnd && callbacks.onEnd(getTranscript());
         return;
       }
 
@@ -125,7 +145,7 @@ const SpeechController = (() => {
       const elapsed = Date.now() - startedAt;
       if (elapsed < RECOGNITION_DURATION_MS - 200) {
         try {
-          recognition = createRecognition();
+          recognition = createRecognition(token);
           recognition.start();
           return;
         } catch (err) {
@@ -136,7 +156,7 @@ const SpeechController = (() => {
       active = false;
       clearTimeout(stopTimerId);
       cancelAnimationFrame(progressRafId);
-      callbacks.onEnd && callbacks.onEnd(finalTranscript.trim());
+      callbacks.onEnd && callbacks.onEnd(getTranscript());
     };
 
     return rec;
@@ -165,9 +185,12 @@ const SpeechController = (() => {
 
     callbacks = { onInterim, onEnd, onError, onProgress };
     finalTranscript = '';
+    interimTranscript = '';
     endingByTimer = false;
+    suppressEndCallback = false;
     active = true;
     startedAt = Date.now();
+    const token = ++sessionToken;
 
     try {
       await ensureMicrophoneAccess();
@@ -187,7 +210,7 @@ const SpeechController = (() => {
     if (!active) return;
 
     try {
-      recognition = createRecognition();
+      recognition = createRecognition(token);
       recognition.start();
     } catch (err) {
       active = false;
@@ -215,30 +238,35 @@ const SpeechController = (() => {
           recognition.stop();
         } catch (err) {
           active = false;
-          onEnd && onEnd(finalTranscript.trim());
+          onEnd && onEnd(getTranscript());
         }
       }
     }, RECOGNITION_DURATION_MS);
   }
 
-  function stop() {
+  function stop(options = {}) {
     clearTimeout(stopTimerId);
     cancelAnimationFrame(progressRafId);
     endingByTimer = true;
-    if (recognition && active) {
+    // stop()은 수동 중단용이라 onEnd를 다시 부르지 않습니다.
+    // (타이머 종료는 recognition.stop()을 직접 호출하고 endingByTimer로 처리)
+    suppressEndCallback = true;
+    sessionToken += 1;
+    const wasActive = active;
+    active = false;
+    if (recognition && wasActive) {
       try {
         recognition.stop();
       } catch (err) {
-        active = false;
+        // already stopped
       }
-    } else {
-      active = false;
     }
   }
 
   return {
     start,
     stop,
+    getTranscript,
     ensureMicrophoneAccess,
     get supported() {
       return !!SpeechRecognitionImpl;
