@@ -66,13 +66,80 @@
 
   const savedPanel = document.getElementById('saved-panel');
   const ringAudio = document.getElementById('ring-audio');
+  const promptAudio = document.getElementById('prompt-audio');
 
   let confirmedMessage = '';
   let recordedAudioBlob = null;
   let savedResetTimerId = null;
+  let promptDelayTimerId = null;
   let selectedEntryIds = new Set();
   let pendingDeleteIds = [];
   let playingEntryId = null;
+
+  const PROMPT_VOICES = [
+    '민성.m4a',
+    '민성2.m4a',
+    '서연.m4a',
+    '서연2.m4a',
+    '지수.m4a',
+    '지수2.m4a',
+  ];
+
+  function promptVoiceUrl(filename) {
+    const encoded = encodeURIComponent(filename);
+    if (window.location.protocol === 'file:') {
+      return `../${encoded}`;
+    }
+    return `/${encoded}`;
+  }
+
+  function stopPromptAudio() {
+    clearTimeout(promptDelayTimerId);
+    promptDelayTimerId = null;
+    if (!promptAudio) return;
+    promptAudio.onended = null;
+    promptAudio.onerror = null;
+    promptAudio.pause();
+    promptAudio.removeAttribute('src');
+    promptAudio.load();
+  }
+
+  function pickRandomPromptVoice() {
+    const index = Math.floor(Math.random() * PROMPT_VOICES.length);
+    return PROMPT_VOICES[index];
+  }
+
+  function playRandomPromptVoice() {
+    return new Promise((resolve) => {
+      if (!promptAudio) {
+        resolve();
+        return;
+      }
+
+      setAudioSessionType('playback');
+      clearTimeout(promptDelayTimerId);
+
+      promptDelayTimerId = setTimeout(() => {
+        promptDelayTimerId = null;
+        const filename = pickRandomPromptVoice();
+        const finish = () => {
+          promptAudio.onended = null;
+          promptAudio.onerror = null;
+          resolve();
+        };
+
+        promptAudio.onended = finish;
+        promptAudio.onerror = finish;
+        promptAudio.src = promptVoiceUrl(filename);
+        promptAudio.currentTime = 0;
+
+        const playPromise = promptAudio.play();
+        if (playPromise && typeof playPromise.then === 'function') {
+          playPromise.catch(() => finish());
+        }
+      }, 1000);
+    });
+  }
 
   /* ------------------------------------------------------------
    * iOS/iPadOS 오디오 세션 제어 (Safari 17+ AudioSession API)
@@ -214,6 +281,7 @@
     deskScene.dataset.state = 'idle';
     setAudioSessionType('playback');
     stopRing();
+    stopPromptAudio();
     SpeechController.stop();
     AudioRecorder.cancel();
     recordedAudioBlob = null;
@@ -283,19 +351,31 @@
     });
   }
 
-  function goListening() {
+  async function goListening() {
     deskScene.dataset.state = 'listening';
     clearError();
     handsetEl.classList.remove('ringing');
     stopRing();
+    stopPromptAudio();
     statusText.textContent = '';
-    setAudioSessionType('play-and-record');
+    setAudioSessionType('playback');
     showOnly(listeningPanel);
+
+    liveTranscript.textContent = '… 연결 중 …';
+    listenConfirmBtn.disabled = true;
+    progressFill.style.transition = 'none';
+    progressFill.style.width = '100%';
+
+    await playRandomPromptVoice();
+    if (deskScene.dataset.state !== 'listening') return;
+
+    setAudioSessionType('play-and-record');
     beginListeningSession();
   }
 
   async function restartListening() {
     SpeechController.stop();
+    stopPromptAudio();
     await AudioRecorder.cancel();
     recordedAudioBlob = null;
     goListening();
