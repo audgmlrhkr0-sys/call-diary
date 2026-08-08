@@ -77,20 +77,16 @@
   let playingEntryId = null;
 
   const PROMPT_VOICES = [
-    '민성.m4a',
-    '민성2.m4a',
-    '서연.m4a',
-    '서연2.m4a',
-    '지수.m4a',
-    '지수2.m4a',
+    'assets/sounds/prompts/minsung.m4a',
+    'assets/sounds/prompts/minsung2.m4a',
+    'assets/sounds/prompts/seoyeon.m4a',
+    'assets/sounds/prompts/seoyeon2.m4a',
+    'assets/sounds/prompts/jisu.m4a',
+    'assets/sounds/prompts/jisu2.m4a',
   ];
 
-  function promptVoiceUrl(filename) {
-    // file:// 에서는 한글 파일명을 그대로, http 에서는 인코딩해서 요청합니다.
-    if (window.location.protocol === 'file:') {
-      return `../${filename}`;
-    }
-    return `/${encodeURIComponent(filename)}`;
+  function promptVoiceUrl(path) {
+    return path;
   }
 
   function delay(ms) {
@@ -146,12 +142,14 @@
     if (!promptAudio) return;
 
     setAudioSessionType('playback');
-    const filename = pickRandomPromptVoice();
-    const url = promptVoiceUrl(filename);
+    const url = pickRandomPromptVoice();
 
     // 통화 시작 클릭(사용자 제스처) 안에서 먼저 오디오를 잠금 해제합니다.
     const ready = await unlockPromptAudio(url);
-    if (!ready) return;
+    if (!ready) {
+      console.warn('안내 음성 파일을 재생할 수 없습니다:', url);
+      return;
+    }
     if (deskScene.dataset.state !== 'listening') return;
 
     await delay(1000);
@@ -169,7 +167,7 @@
 
       promptAudio.onended = finish;
       promptAudio.onerror = () => {
-        console.warn('안내 음성 재생 중 오류:', filename);
+        console.warn('안내 음성 재생 중 오류:', url);
         finish();
       };
 
@@ -182,7 +180,7 @@
       const playPromise = promptAudio.play();
       if (playPromise && typeof playPromise.then === 'function') {
         playPromise.catch((err) => {
-          console.warn('안내 음성 재생 실패:', filename, err);
+          console.warn('안내 음성 재생 실패:', url, err);
           finish();
         });
       }
