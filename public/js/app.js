@@ -80,64 +80,21 @@
   let pendingDeleteIds = [];
   let playingEntryId = null;
 
+  const UNIFIED_PROMPT_QUESTION = '하고 싶은 말을 자유롭게 남겨주세요.';
   const PROMPT_VOICES = [
-    {
-      src: 'assets/sounds/prompts/minsung.m4a',
-      question: '미술관에 방문하게 된 계기는?',
-    },
-    {
-      src: 'assets/sounds/prompts/minsung2.m4a',
-      question: '나만의 규칙을 말해 주세요!',
-    },
-    {
-      src: 'assets/sounds/prompts/seoyeon.m4a',
-      question: '당신에게 기준이란?',
-    },
-    {
-      src: 'assets/sounds/prompts/seoyeon2.m4a',
-      question: '가장 기억에 남는 작품을 말해 주세요!',
-    },
-    {
-      src: 'assets/sounds/prompts/jisu.m4a',
-      question: '오늘의 기분을 한 줄로 소개해 주세요!',
-    },
-    {
-      src: 'assets/sounds/prompts/jisu2.m4a',
-      question: '여러분에게 미술관이란?',
-    },
+    'assets/sounds/prompts/su.m4a',
+    'assets/sounds/prompts/min.m4a',
   ];
 
-  let promptVoiceQueue = [];
-  let lastPromptVoiceSrc = '';
+  let nextPromptVoiceIndex = 0;
 
-  function shuffleList(list) {
-    const arr = list.slice();
-    for (let i = arr.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      const tmp = arr[i];
-      arr[i] = arr[j];
-      arr[j] = tmp;
-    }
-    return arr;
-  }
-
-  function refillPromptVoiceQueue() {
-    promptVoiceQueue = shuffleList(PROMPT_VOICES);
-    if (
-      promptVoiceQueue.length > 1 &&
-      promptVoiceQueue[0].src === lastPromptVoiceSrc
-    ) {
-      promptVoiceQueue.push(promptVoiceQueue.shift());
-    }
-  }
-
-  function pickRandomPromptVoice() {
-    if (!promptVoiceQueue.length) {
-      refillPromptVoiceQueue();
-    }
-    const next = promptVoiceQueue.shift();
-    lastPromptVoiceSrc = next.src;
-    return next;
+  function pickNextPromptVoice() {
+    const src = PROMPT_VOICES[nextPromptVoiceIndex];
+    nextPromptVoiceIndex = (nextPromptVoiceIndex + 1) % PROMPT_VOICES.length;
+    return {
+      src,
+      question: UNIFIED_PROMPT_QUESTION,
+    };
   }
 
   function setLiveTranscriptStatus(text) {
@@ -182,9 +139,9 @@
     promptAudio.load();
   }
 
-  async function playRandomPromptVoice() {
+  async function playPromptVoice() {
     setAudioSessionType('playback');
-    const prompt = pickRandomPromptVoice();
+    const prompt = pickNextPromptVoice();
     confirmedQuestion = prompt.question;
     setPromptQuestion(prompt.question);
 
@@ -622,7 +579,7 @@
     setLiveTranscriptStatus('… 상대방이 말하는 중 …');
     setListeningQuestion('');
 
-    await playRandomPromptVoice();
+    await playPromptVoice();
     if (deskScene.dataset.state !== 'listening') return;
 
     stopPromptAudio();
