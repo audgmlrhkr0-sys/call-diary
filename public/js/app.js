@@ -28,6 +28,7 @@
    * ---------------------------------------------------------- */
   const deskScene = document.getElementById('desk-scene');
   const galleryScene = document.getElementById('gallery-scene');
+  const homeBtn = document.getElementById('home-btn');
   const galleryToggleBtn = document.getElementById('gallery-toggle-btn');
   const backBtn = document.getElementById('back-btn');
   const galleryList = document.getElementById('gallery-list');
@@ -51,6 +52,7 @@
   const liveTranscript = document.getElementById('live-transcript');
   const liveTranscriptStatus = document.getElementById('live-transcript-status');
   const promptQuestionEl = document.getElementById('prompt-question');
+  const listenHomeBtn = document.getElementById('listen-home-btn');
   const listenCancelBtn = document.getElementById('listen-cancel-btn');
   const listenConfirmBtn = document.getElementById('listen-confirm-btn');
 
@@ -76,6 +78,11 @@
   let recordedAudioBlob = null;
   let savedResetTimerId = null;
   let promptDelayTimerId = null;
+  let promptNearEndTimerId = null;
+  let promptTimeUpdateHandler = null;
+  let speechCaptureEnabled = false;
+  let primedRecognitionStarted = false;
+  let listeningRecorderStarted = false;
   let selectedEntryIds = new Set();
   let pendingDeleteIds = [];
   let playingEntryId = null;
@@ -128,9 +135,15 @@
   function stopPromptAudio() {
     clearTimeout(promptDelayTimerId);
     promptDelayTimerId = null;
+    clearTimeout(promptNearEndTimerId);
+    promptNearEndTimerId = null;
     setListeningQuestion('');
     stopPromptBufferSource();
     if (!promptAudio) return;
+    if (promptTimeUpdateHandler) {
+      promptAudio.removeEventListener('timeupdate', promptTimeUpdateHandler);
+      promptTimeUpdateHandler = null;
+    }
     promptAudio.onended = null;
     promptAudio.onerror = null;
     promptAudio.pause();
@@ -139,7 +152,20 @@
     promptAudio.load();
   }
 
-  async function playPromptVoice() {
+  function schedulePromptNearEnd(durationSec, onNearEnd) {
+    clearTimeout(promptNearEndTimerId);
+    promptNearEndTimerId = null;
+    if (!onNearEnd || !(durationSec > 0)) return;
+    // 인식 엔진이 켜지는 시간을 안내 음성 끝과 겹쳐, 끝나자마자 말할 수 있게 합니다.
+    const leadSec = SpeechController.isIOS ? 0.12 : 0.35;
+    const waitMs = Math.max(0, (durationSec - leadSec) * 1000);
+    promptNearEndTimerId = setTimeout(() => {
+      promptNearEndTimerId = null;
+      onNearEnd();
+    }, waitMs);
+  }
+
+  async function playPromptVoice({ onNearEnd } = {}) {
     setAudioSessionType('playback');
     const prompt = pickNextPromptVoice();
     confirmedQuestion = prompt.question;
@@ -149,14 +175,23 @@
     await resumeAudioCtx();
     if (deskScene.dataset.state !== 'listening') return;
 
+    const bufferPromise = loadPromptAudioBuffer(prompt.src).catch((err) => {
+      console.warn('안내 음성 미리 로드 실패:', prompt.src, err);
+      return null;
+    });
+    // 안내 음성이 나오는 동안 마이크를 미리 열어 인식 전환 공백을 없앱니다.
+    SpeechController.ensureMicrophoneAccess({ keepAlive: true }).catch(() => {});
+
     await delay(1000);
     if (deskScene.dataset.state !== 'listening') return;
 
     // iOS Safari: HTMLAudioElement 직후 SpeechRecognition이 자주 깨져 Web Audio로 재생합니다.
     try {
-      const buffer = await loadPromptAudioBuffer(prompt.src);
+      const buffer = await bufferPromise;
+      if (!buffer) throw new Error('버퍼 없음');
       if (deskScene.dataset.state !== 'listening') return;
       setListeningQuestion(prompt.question);
+      schedulePromptNearEnd(buffer.duration, onNearEnd);
       await playPromptBuffer(buffer);
       setListeningQuestion('');
       return;
@@ -179,10 +214,26 @@
         if (settled) return;
         settled = true;
         setListeningQuestion('');
+        if (promptTimeUpdateHandler) {
+          promptAudio.removeEventListener('timeupdate', promptTimeUpdateHandler);
+          promptTimeUpdateHandler = null;
+        }
         promptAudio.onended = null;
         promptAudio.onerror = null;
         resolve();
       };
+
+      promptTimeUpdateHandler = () => {
+        const duration = promptAudio.duration;
+        if (!duration || !isFinite(duration)) return;
+        const leadSec = SpeechController.isIOS ? 0.12 : 0.35;
+        if (duration - promptAudio.currentTime <= leadSec) {
+          promptAudio.removeEventListener('timeupdate', promptTimeUpdateHandler);
+          promptTimeUpdateHandler = null;
+          if (onNearEnd) onNearEnd();
+        }
+      };
+      promptAudio.addEventListener('timeupdate', promptTimeUpdateHandler);
 
       promptAudio.onended = finish;
       promptAudio.onerror = () => {
@@ -193,10 +244,16 @@
       setListeningQuestion(prompt.question);
       const playPromise = promptAudio.play();
       if (playPromise && typeof playPromise.then === 'function') {
-        playPromise.catch((playErr) => {
-          console.warn('안내 음성 재생 실패:', prompt.src, playErr);
-          finish();
-        });
+        playPromise
+          .then(() => {
+            if (promptAudio.duration && isFinite(promptAudio.duration)) {
+              schedulePromptNearEnd(promptAudio.duration, onNearEnd);
+            }
+          })
+          .catch((playErr) => {
+            console.warn('안내 음성 재생 실패:', prompt.src, playErr);
+            finish();
+          });
       }
     });
   }
@@ -221,17 +278,6 @@
 
   /** iOS: 이전 인식/재생 세션을 강제로 내려 다시 마이크를 잡을 수 있게 합니다. */
   async function resetAudioSessionForCapture() {
-    stopPromptAudio();
-    setAudioSessionType('playback');
-    await new Promise((resolve) => setTimeout(resolve, 40));
-    try {
-      if (navigator.audioSession) {
-        navigator.audioSession.type = 'auto';
-      }
-    } catch (err) {
-      // ignore
-    }
-    await new Promise((resolve) => setTimeout(resolve, SpeechController.isIOS ? 200 : 40));
     setAudioSessionType('play-and-record');
   }
 
@@ -434,9 +480,19 @@
     errorText.classList.remove('hidden');
   }
 
+  function updateHomeBtn() {
+    const inGallery = galleryScene && !galleryScene.classList.contains('hidden');
+    const state = deskScene.dataset.state;
+    const showHeaderHome = !inGallery && state !== 'idle' && state !== 'listening';
+    if (homeBtn) homeBtn.classList.toggle('hidden', !showHeaderHome);
+  }
+
   function goIdle() {
     clearTimeout(savedResetTimerId);
     deskScene.dataset.state = 'idle';
+    speechCaptureEnabled = false;
+    primedRecognitionStarted = false;
+    listeningRecorderStarted = false;
     setAudioSessionType('playback');
     stopRing();
     stopPromptAudio();
@@ -451,24 +507,34 @@
     showOnly(null);
     callBtn.classList.remove('hidden');
     statusText.textContent = '';
+    updateHomeBtn();
   }
 
   function goRinging() {
     deskScene.dataset.state = 'ringing';
+    speechCaptureEnabled = false;
+    primedRecognitionStarted = false;
+    listeningRecorderStarted = false;
     clearError();
     handsetEl.classList.add('ringing');
     startRing();
     statusText.innerHTML = '따르릉 &mdash; 전화가 오고 있습니다';
     showOnly(answerBtn);
+    updateHomeBtn();
+
+    resumeAudioCtx();
+    PROMPT_VOICES.forEach((src) => {
+      loadPromptAudioBuffer(src).catch(() => {});
+    });
 
     // 사용자 제스처 시점에 마이크 권한을 미리 받아 두면,
     // 같은 주소에서는 새로고침 후에도 브라우저가 다시 묻지 않습니다.
     if (SpeechController.ensureMicrophoneAccess) {
-      SpeechController.ensureMicrophoneAccess().catch(() => {});
+      SpeechController.ensureMicrophoneAccess({ keepAlive: true }).catch(() => {});
     }
   }
 
-  async function beginListeningSession() {
+  function startListeningCaptureUi() {
     setLiveTranscriptStatus('… 답변 중 …');
     setListeningQuestion('');
     statusText.textContent = '';
@@ -480,46 +546,60 @@
     requestAnimationFrame(() => {
       progressFill.style.width = '0%';
     });
+  }
+
+  function enableSpeechCapture() {
+    speechCaptureEnabled = true;
+    SpeechController.clearTranscript();
+    startListeningCaptureUi();
+    startListeningRecorder();
+  }
+
+  async function startListeningRecorder() {
+    if (!speechCaptureEnabled) return;
+    if (listeningRecorderStarted || deskScene.dataset.state !== 'listening') return;
+    listeningRecorderStarted = true;
+    try {
+      await AudioRecorder.start();
+    } catch (err) {
+      listeningRecorderStarted = false;
+      console.warn('음성 녹음을 시작하지 못했습니다.', err);
+    }
+  }
+
+  async function beginListeningSession({ primed = false } = {}) {
+    if (primedRecognitionStarted && SpeechController.isActive) return;
+    primedRecognitionStarted = true;
+
+    if (speechCaptureEnabled) {
+      startListeningCaptureUi();
+      startListeningRecorder();
+    }
 
     recordedAudioBlob = null;
-    let recorderStarted = false;
-
-    const startRecorderAfterSpeech = async () => {
-      if (recorderStarted || deskScene.dataset.state !== 'listening') return;
-      recorderStarted = true;
-      try {
-        await AudioRecorder.start();
-      } catch (err) {
-        recorderStarted = false;
-        console.warn('음성 녹음을 시작하지 못했습니다.', err);
-      }
-    };
 
     SpeechController.start({
+      primed,
       onStart: () => {
-        // 인식이 마이크를 잡은 뒤 녹음 시작 (아이패드는 조금 더 늦게)
-        const delayMs = SpeechController.isIOS ? 700 : 100;
-        setTimeout(() => {
-          startRecorderAfterSpeech();
-        }, delayMs);
+        if (!speechCaptureEnabled) return;
+        startListeningRecorder();
       },
       onInterim: (text) => {
+        if (!speechCaptureEnabled) return;
         setLiveTranscriptStatus(text || '… 답변 중 …');
         listenConfirmBtn.disabled = !text;
-        // 인식이 실제로 글자를 내기 시작했다면 녹음도 보장
-        if (text && !recorderStarted) {
-          startRecorderAfterSpeech();
-        }
+        if (text) startListeningRecorder();
       },
       onEnd: async (finalText) => {
         if (deskScene.dataset.state !== 'listening') return;
-        recordedAudioBlob = recorderStarted ? await AudioRecorder.stop() : null;
-        if (!finalText) {
+        recordedAudioBlob = listeningRecorderStarted ? await AudioRecorder.stop() : null;
+        const text = speechCaptureEnabled ? finalText : '';
+        if (!text) {
           recordedAudioBlob = null;
           goRingingReadyForRetry();
           return;
         }
-        goReviewing(finalText);
+        goReviewing(text);
       },
       onError: async (message) => {
         if (deskScene.dataset.state !== 'listening') return;
@@ -530,15 +610,17 @@
       },
     });
 
-    // onStart가 없는 브라우저용 폴백
     setTimeout(() => {
-      startRecorderAfterSpeech();
-    }, SpeechController.isIOS ? 1500 : 400);
+      startListeningRecorder();
+    }, SpeechController.isIOS ? 200 : 40);
   }
 
   async function goListening(options = {}) {
     const skipPrompt = !!options.skipPrompt;
     deskScene.dataset.state = 'listening';
+    speechCaptureEnabled = false;
+    primedRecognitionStarted = false;
+    listeningRecorderStarted = false;
     clearError();
     handsetEl.classList.remove('ringing');
     stopRing();
@@ -546,11 +628,9 @@
     statusText.textContent = '';
     setAudioSessionType('playback');
     showOnly(listeningPanel);
+    updateHomeBtn();
 
     resumeAudioCtx();
-    if (SpeechController.ensureMicrophoneAccess) {
-      SpeechController.ensureMicrophoneAccess({ keepAlive: false }).catch(() => {});
-    }
 
     if (!window.isSecureContext) {
       const host = window.location.hostname;
@@ -566,28 +646,36 @@
 
     if (skipPrompt) {
       // 다시하기: 안내 음성을 건너뛰어 iOS 인식 성공률을 높입니다.
+      speechCaptureEnabled = true;
       setLiveTranscriptStatus('… 답변 중 …');
       if (confirmedQuestion) setListeningQuestion(confirmedQuestion);
       await resetAudioSessionForCapture();
-      await new Promise((resolve) => setTimeout(resolve, SpeechController.isIOS ? 500 : 80));
       if (deskScene.dataset.state !== 'listening') return;
       setListeningQuestion('');
-      beginListeningSession();
+      beginListeningSession({ primed: true });
       return;
     }
 
     setLiveTranscriptStatus('… 상대방이 말하는 중 …');
     setListeningQuestion('');
 
-    await playPromptVoice();
+    const startRecognitionEarly = () => {
+      if (deskScene.dataset.state !== 'listening') return;
+      if (primedRecognitionStarted) return;
+      setAudioSessionType('play-and-record');
+      beginListeningSession({ primed: true });
+    };
+
+    await playPromptVoice({
+      onNearEnd: startRecognitionEarly,
+    });
     if (deskScene.dataset.state !== 'listening') return;
 
-    stopPromptAudio();
-    await resetAudioSessionForCapture();
-    await new Promise((resolve) => setTimeout(resolve, SpeechController.isIOS ? 700 : 150));
-    if (deskScene.dataset.state !== 'listening') return;
-
-    beginListeningSession();
+    setAudioSessionType('play-and-record');
+    enableSpeechCapture();
+    if (!primedRecognitionStarted) {
+      beginListeningSession({ primed: true });
+    }
   }
 
   async function restartListening() {
@@ -610,11 +698,15 @@
   // 인식 실패 시, 전화는 끊지 않고 바로 다시 "통화 시작"을 누를 수 있는 상태로
   function goRingingReadyForRetry() {
     deskScene.dataset.state = 'ringing';
+    speechCaptureEnabled = false;
+    primedRecognitionStarted = false;
+    listeningRecorderStarted = false;
     SpeechController.stop();
     AudioRecorder.cancel();
     setAudioSessionType('playback');
     statusText.textContent = '';
     showOnly(answerBtn);
+    updateHomeBtn();
   }
 
   function goReviewing(text) {
@@ -626,6 +718,7 @@
     reviewText.textContent = `“${text}”`;
     statusText.textContent = '';
     showOnly(reviewPanel);
+    updateHomeBtn();
   }
 
   function goNaming() {
@@ -636,6 +729,7 @@
     nameInput.value = '';
     datePreview.textContent = formatPostmarkDate(new Date());
     showOnly(namingPanel);
+    updateHomeBtn();
     setTimeout(() => nameInput.focus(), 50);
   }
 
@@ -654,6 +748,7 @@
       recordedAudioBlob = null;
       statusText.textContent = '';
       showOnly(savedPanel);
+      updateHomeBtn();
       galleryToggleBtn.classList.add('nudge');
       savedResetTimerId = setTimeout(goIdle, 3200);
     } catch (err) {
@@ -670,6 +765,8 @@
    * ---------------------------------------------------------- */
   callBtn.addEventListener('click', goRinging);
   answerBtn.addEventListener('click', () => goListening());
+  if (homeBtn) homeBtn.addEventListener('click', goIdle);
+  if (listenHomeBtn) listenHomeBtn.addEventListener('click', goIdle);
   listenCancelBtn.addEventListener('click', restartListening);
   listenConfirmBtn.addEventListener('click', confirmListeningEarly);
   retryBtn.addEventListener('click', async () => {
@@ -790,6 +887,7 @@
     deskScene.classList.add('hidden');
     galleryScene.classList.remove('hidden');
     galleryToggleBtn.classList.add('hidden');
+    updateHomeBtn();
     galleryToggleBtn.classList.remove('nudge');
     galleryList.innerHTML = '';
     try {
@@ -808,6 +906,7 @@
     galleryScene.classList.add('hidden');
     deskScene.classList.remove('hidden');
     galleryToggleBtn.classList.remove('hidden');
+    updateHomeBtn();
   }
 
   function openAdminModal(ids) {

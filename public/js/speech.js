@@ -11,7 +11,7 @@
 const SpeechController = (() => {
   const RECOGNITION_DURATION_MS = 15000;
   const MIC_GRANTED_KEY = 'phone-guestbook-mic-granted';
-  const RESTART_DELAY_MS = 220;
+  const RESTART_DELAY_MS = 80;
   const SpeechRecognitionImpl =
     window.SpeechRecognition || window.webkitSpeechRecognition || null;
 
@@ -40,6 +40,11 @@ const SpeechController = (() => {
     return `${finalTranscript} ${interimTranscript}`.trim();
   }
 
+  function clearTranscript() {
+    finalTranscript = '';
+    interimTranscript = '';
+  }
+
   function isSecureEnough() {
     if (window.isSecureContext) return true;
     const host = window.location.hostname;
@@ -55,6 +60,10 @@ const SpeechController = (() => {
   async function ensureMicrophoneAccess({ keepAlive = false } = {}) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error('이 환경에서는 마이크를 사용할 수 없습니다. localhost 또는 HTTPS로 열어주세요.');
+    }
+
+    if (keepAlive && micWarmStream) {
+      return micWarmStream;
     }
 
     releaseMicWarmStream();
@@ -227,7 +236,7 @@ const SpeechController = (() => {
     return rec;
   }
 
-  async function start({ onInterim, onEnd, onError, onProgress, onStart } = {}) {
+  async function start({ onInterim, onEnd, onError, onProgress, onStart, primed = false } = {}) {
     if (!SpeechRecognitionImpl) {
       onError &&
         onError(
@@ -247,13 +256,16 @@ const SpeechController = (() => {
     }
 
     // 이전 세션이 막 끝났다면 iOS가 마이크를 놓을 시간을 줍니다.
+    // primed: 안내 음성 중에 마이크를 이미 열어 둔 경우 → 대기 없이 바로 인식 시작
     if (active) {
       stop();
     }
-    const sinceStop = Date.now() - lastStoppedAt;
-    const needSettle = isIOS ? Math.max(0, 900 - sinceStop) : Math.max(0, 150 - sinceStop);
-    if (needSettle > 0) {
-      await new Promise((resolve) => setTimeout(resolve, needSettle));
+    if (!primed) {
+      const sinceStop = Date.now() - lastStoppedAt;
+      const needSettle = isIOS ? Math.max(0, 400 - sinceStop) : Math.max(0, 40 - sinceStop);
+      if (needSettle > 0) {
+        await new Promise((resolve) => setTimeout(resolve, needSettle));
+      }
     }
 
     callbacks = { onInterim, onEnd, onError, onProgress, onStart };
@@ -266,9 +278,13 @@ const SpeechController = (() => {
     const token = ++sessionToken;
 
     try {
-      await ensureMicrophoneAccess({ keepAlive: false });
-      if (isIOS) {
-        await new Promise((resolve) => setTimeout(resolve, 280));
+      if (primed && micWarmStream) {
+        // 안내 음성 동안 열어 둔 마이크를 인식 시작까지 유지합니다.
+      } else if (!primed) {
+        await ensureMicrophoneAccess({ keepAlive: false });
+        if (isIOS) {
+          await new Promise((resolve) => setTimeout(resolve, 80));
+        }
       }
     } catch (err) {
       active = false;
@@ -296,7 +312,7 @@ const SpeechController = (() => {
     } catch (err) {
       // InvalidStateError: 아직 이전 인식이 안 끝난 경우 → 잠시 후 한 번 더
       if (isIOS) {
-        await new Promise((resolve) => setTimeout(resolve, 700));
+        await new Promise((resolve) => setTimeout(resolve, 180));
         if (!active || token !== sessionToken) return;
         try {
           recognition = createRecognition(token);
@@ -373,7 +389,7 @@ const SpeechController = (() => {
   async function prepareRestart() {
     stop();
     releaseMicWarmStream();
-    await new Promise((resolve) => setTimeout(resolve, isIOS ? 850 : 120));
+    await new Promise((resolve) => setTimeout(resolve, isIOS ? 220 : 40));
   }
 
   return {
@@ -381,6 +397,7 @@ const SpeechController = (() => {
     stop,
     prepareRestart,
     getTranscript,
+    clearTranscript,
     ensureMicrophoneAccess,
     releaseMicWarmStream,
     get supported() {
@@ -388,6 +405,9 @@ const SpeechController = (() => {
     },
     get durationMs() {
       return RECOGNITION_DURATION_MS;
+    },
+    get isActive() {
+      return active;
     },
     get isIOS() {
       return isIOS;

@@ -70,6 +70,10 @@ body {
   padding: 18px 32px;
 }
 
+.home-btn {
+  margin-right: auto;
+}
+
 .ornate-btn {
   font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   font-weight: 700;
@@ -414,7 +418,8 @@ body {
   filter: none;
 }
 
-.listen-cancel-btn {
+.listen-cancel-btn,
+.listen-home-btn {
   font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   font-weight: 700;
   background: #000000;
@@ -426,12 +431,18 @@ body {
   border-radius: 12px;
 }
 
-.listen-cancel-btn:hover {
+.listen-home-btn {
+  letter-spacing: 0.12em;
+}
+
+.listen-cancel-btn:hover,
+.listen-home-btn:hover {
   transform: translateY(-2px);
   background: #1a1a1a;
 }
 
-.listen-cancel-btn:active {
+.listen-cancel-btn:active,
+.listen-home-btn:active {
   transform: translateY(1px);
 }
 
